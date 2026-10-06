@@ -144,6 +144,9 @@ final class MontageberichtTests: XCTestCase {
         var report = sample(); report.customerSignature = nil
         let data = try ReportPDF.render(report); let document = try XCTUnwrap(PDFDocument(data:data))
         XCTAssertTrue(document.string?.contains("Müller") == true); XCTAssertTrue(document.string?.contains("Entwurf") == true)
+        let confirmationPage = (0..<document.pageCount).compactMap { document.page(at: $0)?.string }.first { $0.contains("Unterschrift Kunde") }
+        let compactConfirmation = confirmationPage?.components(separatedBy: .whitespacesAndNewlines).joined() ?? ""
+        XCTAssertTrue(compactConfirmation.contains(Report.confirmation.components(separatedBy: .whitespacesAndNewlines).joined()), "Signature and confirmation must remain on the same page")
         let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "com.adobe.pdf"); attachment.name = "Montagebericht-Test"; attachment.lifetime = .keepAlways; add(attachment)
     }
     func testMultiPagePDFContainsEndingAndLongTableCells() throws {

@@ -185,23 +185,28 @@ private final class PDFLayout {
             for i in 0..<half { rows.append([materials[i].quantity,materials[i].description,i+half < materials.count ? materials[i+half].quantity : "",i+half < materials.count ? materials[i+half].description : ""]) }
             table("Material / zu berechnende Ersatzteile", headings: ["Menge","Bezeichnung","Menge","Bezeichnung"], rows: rows, fractions: [0.08,0.42,0.08,0.42])
         }
-        if r.department == .montage { heading("Kundenbestätigung"); paragraph([(r.machineOk,"Maschinen / Anlagen in Ordnung"),(r.workOk,"Arbeiten ordnungsgemäß ausgeführt"),(r.paid,"Gegen Bezahlung")].map { ($0.0 ? "[X] " : "[ ] ") + $0.1 }.joined(separator: "    "), size: 8) }
         // Sehr lange Namen vollständig umbrechen statt sie in der Signaturhöhe abzuschneiden.
         let customerNameIsLong = height(text(r.signer), width: width / 2 - 12) > 22
         let technicianNameIsLong = height(text(r.technician), width: width / 2 - 12) > 22
         if customerNameIsLong { block("Name des Kunden", r.signer) }
         if r.department == .karcher && technicianNameIsLong { block("Name des Monteurs", r.technician) }
-        if bottom - y < 112 { page() }
+        let checkText = [(r.machineOk,"Maschinen / Anlagen in Ordnung"),(r.workOk,"Arbeiten ordnungsgemäß ausgeführt"),(r.paid,"Gegen Bezahlung")].map { ($0.0 ? "[X] " : "[ ] ") + $0.1 }.joined(separator: "    ")
+        let notice = "Dieser Arbeitsnachweis dient als Grundlage für die Abrechnung der eingetragenen Tätigkeit."
+        let status: String
+        if let finalizedAt = r.finalizedAt { let f = DateFormatter(); f.locale = Locale(identifier: "de_DE"); f.dateStyle = .medium; f.timeStyle = .medium; status = "Abgeschlossen am \(f.string(from: finalizedAt)) (Gerätezeit)\nBericht-ID: \(r.id.uuidString)" }
+        else { status = "Entwurf – noch nicht abgeschlossen\nBericht-ID: \(r.id.uuidString)" }
+        var confirmationHeight: CGFloat = 17 + 88 + height(text(status, size: 7), width: width) + 5 + 24
+        if r.signatureAccepted { confirmationHeight += height(text(Report.confirmation, size: 7), width: width) + 5 }
+        if r.department == .montage { confirmationHeight += 17 + height(text(checkText, size: 8), width: width) + 5 + height(text(notice, size: 7), width: width) + 5 }
+        if bottom - y < confirmationHeight { page() }
+        if r.department == .montage { heading("Kundenbestätigung"); paragraph(checkText, size: 8) }
         heading("Bestätigung · " + date(r.confirmedDate))
         if r.department == .karcher { signature(r.technicianSignature, title: "Unterschrift Monteur", x: left, name: technicianNameIsLong ? "Siehe Name des Monteurs" : r.technician) }
         else { text("Datum: " + date(r.confirmedDate), size: 9).draw(in: CGRect(x: left, y: y, width: width / 2, height: 24)) }
         signature(r.customerSignature, title: "Unterschrift Kunde", x: left + width / 2, name: customerNameIsLong ? "Siehe Name des Kunden" : r.signer)
         y += 88
         if r.signatureAccepted { paragraph(Report.confirmation, size: 7) }
-        if r.department == .montage { paragraph("Dieser Arbeitsnachweis dient als Grundlage für die Abrechnung der eingetragenen Tätigkeit.", size: 7) }
-        let status: String
-        if let finalizedAt = r.finalizedAt { let f = DateFormatter(); f.locale = Locale(identifier: "de_DE"); f.dateStyle = .medium; f.timeStyle = .medium; status = "Abgeschlossen am \(f.string(from: finalizedAt)) (Gerätezeit)\nBericht-ID: \(r.id.uuidString)" }
-        else { status = "Entwurf – noch nicht abgeschlossen\nBericht-ID: \(r.id.uuidString)" }
+        if r.department == .montage { paragraph(notice, size: 7) }
         paragraph(status, size: 7)
     }
 }
