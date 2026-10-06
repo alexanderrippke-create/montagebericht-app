@@ -59,18 +59,6 @@ jobs:
           (cd build/package && zip -qry ../Montagebericht-unsigned.ipa Payload)
           printf '%s\n' 'Unsigned arm64 device package. NOT directly installable. Must be signed locally with your own Apple account, e.g. AltStore Classic. No provisioning profile or Apple credentials included.' > build/READ-ME-FIRST.txt
           shasum -a 256 build/Montagebericht-unsigned.ipa > build/SHA256.txt
-      - name: Capture native app and export PDF test samples
-        run: |
-          set -euo pipefail
-          for device in "$IPAD_DESTINATION" "$IPHONE_DESTINATION"; do
-            udid="${device##*id=}"
-            xcrun simctl bootstatus "$udid" -b
-            xcrun simctl install "$udid" build/DerivedData/Build/Products/Debug-iphonesimulator/Montagebericht.app
-            xcrun simctl launch "$udid" de.gustavschmidt.montagebericht
-            sleep 3
-            xcrun simctl io "$udid" screenshot "build/screenshot-$udid.png"
-          done
-          xcrun xcresulttool export attachments --path build/iPad.xcresult --output-path build/pdf-samples
       - name: Upload device package for local test signing
         uses: actions/upload-artifact@v4
         with:
@@ -80,6 +68,30 @@ jobs:
             ios/build/READ-ME-FIRST.txt
             ios/build/SHA256.txt
           retention-days: 14
+      - name: Export PDF test samples
+        run: xcrun xcresulttool export attachments --path build/iPad.xcresult --output-path build/pdf-samples
+      - name: Capture native app
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices booted -j > /tmp/booted-devices.json
+          python3 - <<'PY'
+          import json, os, subprocess
+          keep = {os.environ[key].split('id=')[-1] for key in ['IPAD_DESTINATION', 'IPHONE_DESTINATION']}
+          for devices in json.load(open('/tmp/booted-devices.json'))['devices'].values():
+              for device in devices:
+                  if device['udid'] not in keep:
+                      subprocess.run(['xcrun', 'simctl', 'shutdown', device['udid']], check=False)
+          PY
+          for device in "$IPAD_DESTINATION" "$IPHONE_DESTINATION"; do
+            udid="${device##*id=}"
+            xcrun simctl bootstatus "$udid" -b
+            xcrun simctl install "$udid" build/DerivedData/Build/Products/Debug-iphonesimulator/Montagebericht.app
+            xcrun simctl launch --terminate-running-process "$udid" de.gustavschmidt.montagebericht
+            sleep 3
+            xcrun simctl io "$udid" screenshot "build/screenshot-$udid.png"
+            xcrun simctl shutdown "$udid"
+          done
       - name: Upload test results and build logs
         if: always()
         uses: actions/upload-artifact@v4
