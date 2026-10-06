@@ -21,7 +21,7 @@ Referenz: lokale produktive Windows-App, Paket 0.1.4, einschließlich der vorhan
 | Pflichtkunde, HTML-Mailvalidierung | Kunde für PDF/Abschluss; eingegebene E-Mail validieren | Entwürfe dürfen unvollständig sein |
 | Abschluss-Pflichtfelder (`completion.js`) | Auftrag, Monteur, Arbeiten, Name, positive Stunden, Kundenzeichnung und Zustimmung; Kärcher Monteurzeichnung | Kunden-E-Mail ist für Abschluss wie Quelle optional |
 | Prüfen (`app.js`) | Vollständigkeitsprüfung | iOS prüft Abschlussbedingungen; kein Mailzwang für lokalen Abschluss |
-| Kundenbestätigung, Häkchen, Datum/Name | Vollständig gespeichert | Kärcher-PDF zeigt wie Quelle nur Datum/Signaturen |
+| Kundenbestätigung, Häkchen, Datum/Name | Montage-Häkchen; beide Abteilungen mit Datum, Name, Zustimmung und Signaturen | Kärcher-PDF zeigt wie Quelle nur Datum/Signaturen; im iOS-Serviceformular werden die dort nicht exportierten Montage-Häkchen nicht angeboten |
 | Unterschrift Kunde und Kärcher-Monteur | PencilKit, Finger/Pencil, löschen, speichern | Keine Maus erforderlich |
 | Gesperrter Abschluss, neue Bearbeitung | Separate abgeschlossene Fassung; neue Kopie ohne Unterschriften | Ursprünglichen Entwurf erst nach erfolgreicher Archivierung ersetzen |
 | PDF-Archiv, SHA-256 (`main.cjs`) | JSON-Nachweis und Original-PDF, Integritätsprüfung beim Export | App-Sandbox statt Windows-Dokumente; Gerätezeit bleibt Gerätezeit |
@@ -34,7 +34,7 @@ Referenz: lokale produktive Windows-App, Paket 0.1.4, einschließlich der vorhan
 | Labelparser, Ortsparser, Auftragsnummer/Mail (`import-parser.js`) | Swift-Parser mit denselben fachlichen Aliasfeldern | Kein HTML; Mehrdeutigkeit bleibt manuell |
 | .ics-Import | Größenlimit 2 MB/500; UTF-8; DTSTART/END mit UTC/IANA-Zone | RRULE/VTIMEZONE keine eigene Auflösung; EventKit empfohlen |
 | PDF speichern | PDFKit-Vorschau + native Dateien-/Share-Auswahl | Kein Windows-Druckdialog |
-| Outlook-Entwurf mit Anhang (`desktop.js`) | MessageUI-E-Mail-Entwurf mit Kunden-/Sachbearbeiter-Empfänger | Mail-Konfiguration erforderlich; alternativ Share Sheet |
+| Outlook-Entwurf mit Anhang (`desktop.js`) | MessageUI-E-Mail-Entwurf mit Kunden-/Sachbearbeiter-Empfänger | Mail-Konfiguration erforderlich; alternativ Share Sheet. Für lokale native Mail-Entwürfe ist Auftrag optional; beim Berichtsabschluss bleibt er verpflichtend |
 | Kein automatischer Versand | Kein automatischer Versand | Benutzer sendet explizit |
 | Windows-Updateprüfung (`updates.cjs`) | iOS-Version in Einstellungen; AltStore/TestFlight/Apple-Distribution | Kein Download/Start einer Windows-EXE; Plattformupdate ersetzt |
 | Fehlerdiagnose in Datei (`main.cjs`) | Verständliche sichtbare Fehlermeldungen, CI-Logs | Kein personenbezogenes Diagnose-Tracking |

@@ -22,10 +22,26 @@ git diff --name-status 7b218cc HEAD
 
 ## Cloud-Prüfung
 
-Der erste GitHub-Actions-Lauf wurde durch den Push nach `ios-app` gestartet:
-[Build iOS Test](https://github.com/alexanderrippke-create/montagebericht-app/actions).
+Die endgültige Codefassung `c707b02f06cb059fb91c84228a5d905c092dcb58` wurde im
+[Cloud-Lauf 37424572402](https://github.com/alexanderrippke-create/montagebericht-app/actions/runs/37424572402) erfolgreich geprüft. Spätere Abschluss-Commits ändern nur Dokumentation; der App-Code entspricht diesem gebauten Stand.
 
-Der Workflow führt Plist-/Projektprüfung, XCTest auf iPad und iPhone und einen unsigned arm64-Geräte-Build aus. Ein konkreter erfolgreicher Abschluss wird erst nach Sichtung der Protokolle hier dokumentiert. Die vorhandene XCTest-Suite ist keine Aussage über einen bereits bestandenen Lauf.
+- macOS-15-arm64-Runner, Xcode 16.4, Simulator iOS 18.5.
+- iPad Pro 11-inch (M4): **23 Tests, 0 Fehler**.
+- iPhone 16 Pro: **23 Tests, 0 Fehler**.
+- Release-Build für ein generisches iOS-Gerät: **BUILD SUCCEEDED**, arm64, Mindestversion iOS 17, Gerätefamilie iPhone/iPad.
+- Plist- und reproduzierbare Projektprüfung erfolgreich.
+- Swift-Compilerwarnungen werden als Fehler behandelt; keine Swift-Compilerwarnungen im erfolgreichen Lauf. Xcodes Hinweis zur übersprungenen AppIntents-Metadatenextraktion und Warnungen der GitHub-Upload-Action stammen aus den Werkzeugen, nicht aus Swift-Quellwarnungen.
+- Unsigned IPA und PDF-/XCTest-Artefakte erzeugt, heruntergeladen; SHA-256 gegen Runner-Ausgabe geprüft. IPA-Info.plist nennt die erwartete Bundle-ID, iOS 17, iPhone/iPad und iPhoneOS; ausführbarer Code ist arm64. Kein Provisioning-Profile enthalten.
+
+## PDF-Sichtprüfung
+
+Die drei finalen, direkt von der nativen iOS-Test-App erzeugten PDF-Beispiele wurden vollständig zu PNG gerendert und visuell geprüft: Kärcher **1 Seite**, Montage mit Kompressorwartung **2 Seiten**, sehr lange Texte/Tabellen/Namen **13 Seiten**. Alle 16 Seiten sind DIN A4; kein Textzeichen außerhalb der geprüften sicheren Ränder. Original-Firmenlogo, Tabellenfortsetzungen, Unterschriften und Bestätigung sind sichtbar. Endmarkierungen langer Arbeits-/Material-/Bemerkungs-/Namensfelder sind enthalten. Ein eigener Test prüft, dass Unterschrift und Bestätigungstext auf derselben Seite bleiben. PDFKit fügt bei Zeilenumbrüchen auch innerhalb langer Wörter neue Zeilen in die Textextraktion ein; Vollständigkeitstests berücksichtigen diese visuellen Umbrüche.
+
+Ein früherer iPad-App-Start wurde im Simulator als Screenshot geprüft. Die zusätzliche Screenshot-Erfassung war auf Hosted Runnern langsam und lief bei einem Zwischenstand in ein Zeitlimit. Sie ist nun optional per `capture_ui`, zeitlich begrenzt und unabhängig von den verbindlichen Fachtests/Builds. Der endgültige grüne Lauf hat diesen optionalen Schritt nicht angefordert. Eine vollständige interaktive UI-/Pencil-/Berechtigungsabnahme wird damit nicht behauptet.
+
+## Bereitgestellte Dateien
+
+Im Arbeitsordner `iOS-Testpaket` liegen das geprüfte unsigned Gerätepaket, deutsche Installationskurzanleitung, SHA-256, maschinenlesbares Prüfprotokoll und drei synthetische PDF-Beispiele. Die ausführliche Anleitung liegt unter `ios/README.md`. Quellcode/Tests/Projekt/Assets/Dokumentation befinden sich ausschließlich unter `ios/`, der neue unabhängige Build unter `.github/workflows/ios-test.yml`; insgesamt 31 neue Repository-Dateien. Keine bestehenden Repository-/Windows-Dateien wurden geändert.
 
 ## Noch am echten Gerät erforderlich
 

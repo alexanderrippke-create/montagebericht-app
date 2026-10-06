@@ -63,12 +63,16 @@ xcodebuild build -project ios/Montagebericht.xcodeproj -scheme Montagebericht \
 
 ## Cloud-Build mit GitHub Actions
 
-Workflow **Build iOS Test** läuft auf Pushs mit iOS-Änderungen nach `ios-app`/`main`, bei entsprechenden Pull Requests und manuell über **Actions → Build iOS Test → Run workflow**. Bei einem reinen Feature-Branch ohne Workflow auf dem Default-Branch kann der manuelle Button zunächst fehlen; der Push-Trigger funktioniert bereits. Danach prüft der Runner das generierte Projekt und Plists, führt XCTest auf einem verfügbaren iPad- und iPhone-Simulator aus und baut eine unsigned arm64-Geräte-App. Der unsigned Testbetrieb benötigt **keine GitHub-Secrets**.
+Workflow **Build iOS Test** läuft auf Pushs mit iOS-Änderungen nach `ios-app`/`main`, bei entsprechenden Pull Requests und manuell über **Actions → Build iOS Test → Run workflow**. Bei einem reinen Feature-Branch ohne Workflow auf dem Default-Branch kann der manuelle Button zunächst fehlen; der Push-Trigger funktioniert bereits. Danach prüft der Runner das generierte Projekt und Plists, führt XCTest auf einem verfügbaren iPad- und iPhone-Simulator aus und baut eine unsigned arm64-Geräte-App. Swift-Compilerwarnungen werden als Fehler behandelt. Der unsigned Testbetrieb benötigt **keine GitHub-Secrets**.
 
 Artefakte:
 
 - `Montagebericht-iOS-unsigned`: `Montagebericht-unsigned.ipa`, Erklärung und SHA-256, 14 Tage verfügbar.
-- `Montagebericht-iOS-test-results`: Xcode-Protokolle und `.xcresult`-Testberichte, auch bei Fehlern hochgeladen.
+- `Montagebericht-iOS-test-results`: Xcode-Protokolle, `.xcresult`-Testberichte und exportierte PDF-Testbeispiele, auch bei Fehlern hochgeladen. PDF-Beispiele entstehen aus synthetischen Testdaten.
+
+Beim manuellen Start kann `capture_ui` optional aktiviert werden. Dies ergänzt Simulator-Screenshots. App-Start/Screenshot-Erfassung war auf einem Hosted Runner sehr langsam; der Schritt ist deshalb zeitlich begrenzt und diagnostisch, nicht Voraussetzung für erfolgreiche Fachtests und Geräte-Build. Ein iPad-Start wurde visuell geprüft; reale Bedienung bleibt Teil der Geräteabnahme.
+
+Für lokale PDF-Sichtprüfung kann `scripts/inspect-pdf-samples.py <entpacktes Testartefakt>` verwendet werden. Dieses optionale QA-Werkzeug benötigt Python mit pdfplumber/Pillow und Poppler (`pdftoppm`); es prüft A4/Zeichenränder und rendert alle Seiten. Diese Werkzeuge sind keine Abhängigkeiten der iOS-App.
 
 Die IPA ist eine ZIP-Hülle mit `Payload/Montagebericht.app`, **nicht signiert und nicht direkt installierbar**. AltStore muss sie mit der persönlichen Apple-ID neu signieren und provisionieren. Das ist ein Eingabepaket für diesen manuellen Schritt, keine von Apple exportierte/distributionsfähige IPA. Eine Simulator-App ist für Geräte ungeeignet. Erst nach einem grünen Geräte-Build das Geräteartefakt verwenden. Keine bestehende Windows-Aktion oder kein Release wird durch diesen Workflow ersetzt. Öffentliche Standard-Runner sind nach GitHubs aktuellen Kontobedingungen nutzbar; bei privaten Repositories Kontingent/Billing vor Ausführung prüfen.
 
