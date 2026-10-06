@@ -92,11 +92,18 @@ final class MontageberichtTests: XCTestCase {
         XCTAssertTrue(archived.isFinalized); XCTAssertEqual(store.reports.count,1)
         XCTAssertEqual(ReportStore(root: url).reports.count,1)
         XCTAssertThrowsError(try store.save(source))
+        // Simulate interruption after publishing the archive but before deleting its draft.
+        let originalFolder = url.appendingPathComponent(source.id.uuidString)
+        try FileManager.default.createDirectory(at: originalFolder, withIntermediateDirectories: true)
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(source).write(to: originalFolder.appendingPathComponent("report.json"))
+        XCTAssertEqual(ReportStore(root: url).reports.count,1)
         let data = try store.archivedPDF(archived)
         XCTAssertTrue(PDFDocument(data: data)?.string?.contains(archived.id.uuidString) == true)
         XCTAssertThrowsError(try store.save(archived))
         let pdf = url.appendingPathComponent(archived.id.uuidString).appendingPathComponent("bericht.pdf")
         try Data("changed".utf8).write(to: pdf); XCTAssertThrowsError(try store.archivedPDF(archived))
+        try store.delete(archived); XCTAssertTrue(ReportStore(root: url).reports.isEmpty)
     }
     func testFailedFinalizationPreservesDraft() throws {
         let url = root(); defer { try? FileManager.default.removeItem(at: url) }
@@ -143,11 +150,12 @@ final class MontageberichtTests: XCTestCase {
         var report = sample(); report.work = String(repeating:"Lange Tätigkeit mit Umlauten äöü und Sonderzeichen. ",count:1000) + "ARBEITSENDE"
         report.times[0].note = String(repeating:"Bemerkung ",count:400) + "TABELLENENDE"
         report.parts[0].description = String(repeating:"Ersatzteil ",count:400) + "MATERIALENDE"
+        report.signer = String(repeating:"Langer Kundenname ",count:100) + "NAMENSENDE"
         let data = try ReportPDF.render(report); let document = try XCTUnwrap(PDFDocument(data:data)); let text = document.string ?? ""
         XCTAssertGreaterThan(document.pageCount,2)
         // PDFKit inserts line breaks at visual wrapping positions, also inside long words.
         let compact = text.components(separatedBy: .whitespacesAndNewlines).joined()
-        for end in ["ARBEITSENDE","TABELLENENDE","MATERIALENDE",report.id.uuidString] { XCTAssertTrue(compact.contains(end), "Missing \(end)") }
+        for end in ["ARBEITSENDE","TABELLENENDE","MATERIALENDE","NAMENSENDE",report.id.uuidString] { XCTAssertTrue(compact.contains(end), "Missing \(end)") }
         let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "com.adobe.pdf"); attachment.name = "Montagebericht-Mehrseitig"; attachment.lifetime = .keepAlways; add(attachment)
     }
     func testKarcherPDF() throws {

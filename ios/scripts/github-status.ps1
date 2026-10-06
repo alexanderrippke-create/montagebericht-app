@@ -1,4 +1,4 @@
-param([long]$RunId = 0, [switch]$DownloadLogs)
+param([long]$RunId = 0, [switch]$DownloadLogs, [switch]$DownloadArtifacts)
 $ErrorActionPreference = 'Stop'
 $repositoryAPI = 'https://api.github.com/repos/alexanderrippke-create/montagebericht-app'
 $headers = @{Accept='application/vnd.github+json'; 'User-Agent'='Montagebericht-iOS-Verification'}
@@ -10,7 +10,7 @@ if (!$RunId) {
 $run | Select-Object id,status,conclusion,html_url,head_sha,created_at,updated_at | ConvertTo-Json
 $jobs = Invoke-RestMethod -Uri "$repositoryAPI/actions/runs/$RunId/jobs" -Headers $headers
 $jobs.jobs | ForEach-Object { "Job $($_.id): $($_.status) / $($_.conclusion)"; $_.steps | Select-Object name,status,conclusion,started_at | Format-Table -AutoSize }
-if ($DownloadLogs -and $run.status -eq 'completed') {
+if (($DownloadLogs -or $DownloadArtifacts) -and $run.status -eq 'completed') {
     # Read the existing credential solely for this user's GitHub repository.
     # Never print, write or persist the credential.
     $credentialOutput = "protocol=https`nhost=github.com`npath=alexanderrippke-create/montagebericht-app.git`n`n" | git credential fill
@@ -23,10 +23,22 @@ if ($DownloadLogs -and $run.status -eq 'completed') {
     $logRoot = Join-Path $PSScriptRoot "../build/cloud-$RunId"
     New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
     $archive = Join-Path $logRoot 'logs.zip'
-    Invoke-WebRequest -Uri "$repositoryAPI/actions/runs/$RunId/logs" -Headers $headers -OutFile $archive
-    Expand-Archive -LiteralPath $archive -DestinationPath $logRoot -Force
-    Get-ChildItem -LiteralPath $logRoot -Recurse -Filter '*.txt' | ForEach-Object {
-        Select-String -LiteralPath $_.FullName -Pattern 'error:|warning:|failed|Executed |TEST SUCCEEDED|BUILD SUCCEEDED' | Select-Object -Last 35 | ForEach-Object { $_.Line }
+    if ($DownloadLogs) {
+        Invoke-WebRequest -Uri "$repositoryAPI/actions/runs/$RunId/logs" -Headers $headers -OutFile $archive
+        Expand-Archive -LiteralPath $archive -DestinationPath $logRoot -Force
+        Get-ChildItem -LiteralPath $logRoot -Filter '0_*.txt' | ForEach-Object {
+            Select-String -LiteralPath $_.FullName -Pattern 'error:|warning:|failed|Executed |TEST SUCCEEDED|BUILD SUCCEEDED' | Select-Object -Last 40 | ForEach-Object { $_.Line }
+        }
+    }
+    if ($DownloadArtifacts) {
+        $artifacts = Invoke-RestMethod -Uri "$repositoryAPI/actions/runs/$RunId/artifacts" -Headers $headers
+        foreach ($artifact in $artifacts.artifacts) {
+            $artifactZIP = Join-Path $logRoot ($artifact.name + '.zip')
+            $artifactRoot = Join-Path $logRoot $artifact.name
+            Invoke-WebRequest -Uri $artifact.archive_download_url -Headers $headers -OutFile $artifactZIP
+            Expand-Archive -LiteralPath $artifactZIP -DestinationPath $artifactRoot -Force
+            "Downloaded $($artifact.name) to $artifactRoot"
+        }
     }
     $headers.Remove('Authorization'); $credentialMap.Clear(); $credentialOutput = $null
 }

@@ -173,11 +173,16 @@ private final class PDFLayout {
             table("Material / zu berechnende Ersatzteile", headings: ["Menge","Bezeichnung","Menge","Bezeichnung"], rows: rows, fractions: [0.08,0.42,0.08,0.42])
         }
         if r.department == .montage { block("Kundenbestätigung", [(r.machineOk,"Maschinen / Anlagen in Ordnung"),(r.workOk,"Arbeiten ordnungsgemäß ausgeführt"),(r.paid,"Gegen Bezahlung")].map { ($0.0 ? "[X] " : "[ ] ") + $0.1 }.joined(separator: "\n")) }
+        // Sehr lange Namen vollständig umbrechen statt sie in der Signaturhöhe abzuschneiden.
+        let customerNameIsLong = height(text(r.signer), width: width / 2 - 12) > 22
+        let technicianNameIsLong = height(text(r.technician), width: width / 2 - 12) > 22
+        if customerNameIsLong { block("Name des Kunden", r.signer) }
+        if r.department == .karcher && technicianNameIsLong { block("Name des Monteurs", r.technician) }
         if bottom - y < 155 { page() }
         heading("Bestätigung · " + date(r.confirmedDate))
-        if r.department == .karcher { signature(r.technicianSignature, title: "Unterschrift Monteur", x: left, name: r.technician) }
+        if r.department == .karcher { signature(r.technicianSignature, title: "Unterschrift Monteur", x: left, name: technicianNameIsLong ? "Siehe Name des Monteurs" : r.technician) }
         else { text("Datum: " + date(r.confirmedDate), size: 9).draw(in: CGRect(x: left, y: y, width: width / 2, height: 24)) }
-        signature(r.customerSignature, title: "Unterschrift Kunde", x: left + width / 2, name: r.signer)
+        signature(r.customerSignature, title: "Unterschrift Kunde", x: left + width / 2, name: customerNameIsLong ? "Siehe Name des Kunden" : r.signer)
         y += 108
         if r.signatureAccepted { block("Bestätigungstext", Report.confirmation) }
         if r.department == .montage { block("Abrechnungsgrundlage", "Dieser Arbeitsnachweis dient als Grundlage für die Abrechnung der eingetragenen Tätigkeit.") }
