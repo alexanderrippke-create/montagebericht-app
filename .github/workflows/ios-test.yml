@@ -1,0 +1,79 @@
+name: Build iOS Test
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios-app, main]
+    paths: ['ios/**', '.github/workflows/ios-test.yml']
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios-test.yml']
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode and project integrity
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          node scripts/generate-project.cjs
+          git diff --exit-code -- Montagebericht.xcodeproj
+          plutil -lint Montagebericht/Info.plist Montagebericht/PrivacyInfo.xcprivacy Montagebericht.xcodeproj/project.pbxproj
+      - name: Select available iPad and iPhone simulators
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available -j > /tmp/ios-devices.json
+          python3 - <<'PY'
+          import json, os
+          devices = json.load(open('/tmp/ios-devices.json'))['devices']
+          pool = [d for runtime, items in devices.items() if '.iOS-' in runtime for d in items if d['isAvailable']]
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              for prefix, name in [('IPAD', 'iPad'), ('IPHONE', 'iPhone')]:
+                  device = next(d for d in pool if d['name'].startswith(name))
+                  env.write(f"{prefix}_DESTINATION=platform=iOS Simulator,id={device['udid']}\n")
+          PY
+      - name: Tests on iPad
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild test -project Montagebericht.xcodeproj -scheme Montagebericht -destination "$IPAD_DESTINATION" -derivedDataPath build/DerivedData -resultBundlePath build/iPad.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/ipad-test.log
+      - name: Tests on iPhone
+        run: |
+          set -euo pipefail
+          xcodebuild test -project Montagebericht.xcodeproj -scheme Montagebericht -destination "$IPHONE_DESTINATION" -derivedDataPath build/DerivedData -resultBundlePath build/iPhone.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/iphone-test.log
+      - name: Build unsigned device application
+        run: |
+          set -euo pipefail
+          xcodebuild build -project Montagebericht.xcodeproj -scheme Montagebericht -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/Device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO 2>&1 | tee build/device-build.log
+          mkdir -p build/package/Payload
+          ditto build/Device/Build/Products/Release-iphoneos/Montagebericht.app build/package/Payload/Montagebericht.app
+          (cd build/package && zip -qry ../Montagebericht-unsigned.ipa Payload)
+          printf '%s\n' 'Unsigned arm64 device package. NOT directly installable. Must be signed locally with your own Apple account, e.g. AltStore Classic. No provisioning profile or Apple credentials included.' > build/READ-ME-FIRST.txt
+          shasum -a 256 build/Montagebericht-unsigned.ipa > build/SHA256.txt
+      - name: Upload device package for local test signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: Montagebericht-iOS-unsigned
+          path: |
+            ios/build/Montagebericht-unsigned.ipa
+            ios/build/READ-ME-FIRST.txt
+            ios/build/SHA256.txt
+          retention-days: 14
+      - name: Upload test results and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Montagebericht-iOS-test-results
+          path: |
+            ios/build/*.xcresult
+            ios/build/*.log
+          retention-days: 14
