@@ -6,7 +6,7 @@ struct MontageberichtApp: App {
     var body: some Scene {
         WindowGroup {
             ReportListView().environmentObject(store)
-                .tint(Color(red: 0.08, green: 0.22, blue: 0.34))
+                .tint(Color(uiColor: .systemBlue))
         }
     }
 }
