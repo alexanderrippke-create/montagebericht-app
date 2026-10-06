@@ -45,11 +45,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
-          xcodebuild test -project Montagebericht.xcodeproj -scheme Montagebericht -destination "$IPAD_DESTINATION" -derivedDataPath build/DerivedData -resultBundlePath build/iPad.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/ipad-test.log
+          xcodebuild test -project Montagebericht.xcodeproj -scheme Montagebericht -destination "$IPAD_DESTINATION" -parallel-testing-enabled NO -derivedDataPath build/DerivedData -resultBundlePath build/iPad.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/ipad-test.log
       - name: Tests on iPhone
         run: |
           set -euo pipefail
-          xcodebuild test -project Montagebericht.xcodeproj -scheme Montagebericht -destination "$IPHONE_DESTINATION" -derivedDataPath build/DerivedData -resultBundlePath build/iPhone.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/iphone-test.log
+          xcodebuild test -project Montagebericht.xcodeproj -scheme Montagebericht -destination "$IPHONE_DESTINATION" -parallel-testing-enabled NO -derivedDataPath build/DerivedData -resultBundlePath build/iPhone.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee build/iphone-test.log
       - name: Build unsigned device application
         run: |
           set -euo pipefail
