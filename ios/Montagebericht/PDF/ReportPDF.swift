@@ -62,7 +62,7 @@ private final class PDFLayout {
     }
     func heading(_ title: String) {
         if bottom - y < 48 { page() }
-        text(title, size: 10, bold: true).draw(in: CGRect(x: left, y: y, width: width, height: 18)); y += 21
+        text(title, size: 10, bold: true).draw(in: CGRect(x: left, y: y, width: width, height: 15)); y += 17
     }
     // CoreText liefert die tatsächlich gezeichnete Zeichenanzahl. Auch ein einzelnes
     // mehrseitiges Feld wird vollständig fortgesetzt, einschließlich langer Wörter.
@@ -80,6 +80,19 @@ private final class PDFLayout {
     func height(_ value: NSAttributedString, width: CGFloat) -> CGFloat {
         ceil(CTFramesetterSuggestFrameSizeWithConstraints(CTFramesetterCreateWithAttributedString(value), CFRange(location: 0, length: 0), nil, CGSize(width: width, height: .greatestFiniteMagnitude), nil).height) + 4
     }
+    func paragraph(_ value: String, size: CGFloat = 9, bold: Bool = false) {
+        let content = text(value, size: size, bold: bold)
+        var offset = 0
+        while offset < content.length {
+            if bottom - y < 24 { page() }
+            let rest = content.attributedSubstring(from: NSRange(location: offset, length: content.length - offset))
+            let h = min(height(rest, width: width), bottom - y)
+            let count = drawSegment(content, offset: offset, rect: CGRect(x: left, y: y, width: width, height: h))
+            if count == 0 { page(); continue }
+            offset += count; y += h + 5
+            if offset < content.length { page() }
+        }
+    }
     func block(_ title: String, _ value: String) {
         heading(title)
         let content = text(value)
@@ -87,10 +100,10 @@ private final class PDFLayout {
         while offset < content.length {
             if bottom - y < 35 { page(); heading(title + " (Fortsetzung)") }
             let remaining = content.attributedSubstring(from: NSRange(location: offset, length: content.length - offset))
-            let h = min(height(remaining, width: width - 12) + 12, bottom - y)
+            let h = min(height(remaining, width: width - 8) + 8, bottom - y)
             context.cgContext.setStrokeColor(UIColor.gray.cgColor)
             context.cgContext.stroke(CGRect(x: left, y: y, width: width, height: h))
-            let count = drawSegment(content, offset: offset, rect: CGRect(x: left + 6, y: y + 6, width: width - 12, height: h - 10))
+            let count = drawSegment(content, offset: offset, rect: CGRect(x: left + 4, y: y + 4, width: width - 8, height: h - 6))
             if count == 0 { page(); continue }
             offset += count; y += h + 8
             if offset < content.length { page(); heading(title + " (Fortsetzung)") }
@@ -108,10 +121,10 @@ private final class PDFLayout {
         var offsets = Array(repeating: 0, count: cells.count)
         repeat {
             if bottom - y < 28 { page(); repeatHeader?() }
-            var desired: CGFloat = 24
+            var desired: CGFloat = 18
             for i in cells.indices where offsets[i] < attributed[i].length {
                 let remaining = attributed[i].attributedSubstring(from: NSRange(location: offsets[i], length: attributed[i].length - offsets[i]))
-                desired = max(desired, height(remaining, width: width * fractions[i] - 8) + 8)
+                desired = max(desired, height(remaining, width: width * fractions[i] - 6) + 6)
             }
             let h = min(desired, bottom - y)
             var x = left; var consumed = 0
@@ -120,7 +133,7 @@ private final class PDFLayout {
                 let rect = CGRect(x: x, y: y, width: w, height: h)
                 if bold { context.cgContext.setFillColor(UIColor(white: 0.93, alpha: 1).cgColor); context.cgContext.fill(rect) }
                 context.cgContext.setStrokeColor(UIColor.gray.cgColor); context.cgContext.setLineWidth(0.5); context.cgContext.stroke(rect)
-                let count = drawSegment(attributed[i], offset: offsets[i], rect: rect.insetBy(dx: 4, dy: 4))
+                let count = drawSegment(attributed[i], offset: offsets[i], rect: rect.insetBy(dx: 3, dy: 3))
                 offsets[i] += count; consumed += count; x += w
             }
             y += h
@@ -138,20 +151,20 @@ private final class PDFLayout {
         text(name, size: 9).draw(in: CGRect(x: x, y: y, width: width / 2 - 12, height: 20))
         if let data, let drawing = try? PKDrawing(data: data), !drawing.strokes.isEmpty, !drawing.bounds.isEmpty {
             let image = drawing.image(from: drawing.bounds.insetBy(dx: -8, dy: -8), scale: 2)
-            let area = CGRect(x: x, y: y + 22, width: width / 2 - 14, height: 58)
+            let area = CGRect(x: x, y: y + 18, width: width / 2 - 14, height: 44)
             let scale = min(area.width / image.size.width, area.height / image.size.height)
             image.draw(in: CGRect(x: x, y: area.maxY - image.size.height * scale, width: image.size.width * scale, height: image.size.height * scale))
         }
-        text(title, size: 8).draw(in: CGRect(x: x, y: y + 84, width: width / 2 - 14, height: 18))
+        text(title, size: 8).draw(in: CGRect(x: x, y: y + 66, width: width / 2 - 14, height: 18))
     }
     func content() {
         let r = report
         if r.department == .montage {
             grid([("Firma / Kunde",r.customer),("Monteur",r.technician),("Straße",r.street),("Auftragsnummer",r.order),("PLZ / Ort",r.city),("Bestellung durch",r.orderedBy),("Telefon",r.phone),("Bestellnummer",r.purchase),("Kunden-E-Mail",r.email),("Bestelldatum",date(r.purchaseDate)),("Einsatzdatum",date(r.date))], columns: 3)
             grid([("Anlage / Maschine / Antrieb",r.machine),("Leistung",r.power),("Typ / Teile-Nr. / Fabr.-Nr. / Inv.-Nr.",r.machineId),("Baujahr",r.year)], columns: 2)
-            block("Art des Einsatzes", r.kind)
+            paragraph("Art des Einsatzes: " + r.kind)
         } else {
-            block("Serviceart", r.serviceKinds.joined(separator: " · "))
+            paragraph("Serviceart: " + r.serviceKinds.joined(separator: " · "))
             grid([("Firma / Name",r.customer),("Gerätetyp",r.machine),("Straße",r.street),("Baujahr",r.year),("PLZ / Ort",r.city),("Geräte- / Seriennummer",r.machineId),("Telefon",r.phone),("Zubehör",r.accessories),("E-Mail",r.email),("Voraussichtliche Mängel",r.defects),("Kunden-Nr.",r.customerNumber),("Auftragsnummer",r.order),("Monteur",r.technician),("Einsatzdatum",date(r.date))], columns: 2)
         }
         if !r.task.isEmpty { block("Aufgabe aus dem Termin", r.task) }
@@ -161,7 +174,7 @@ private final class PDFLayout {
         } else {
             table("ARBEITSZEIT", headings: ["Datum","Von","Bis","Pause Min.","Stunden"], rows: r.times.map { [date($0.date),time($0.from),time($0.to),$0.pause,$0.hours] }, fractions: [0.24,0.19,0.19,0.19,0.19])
         }
-        block("Summen", "Gesamtstunden: \(WorkTime.formatted(r.totalHours))" + (r.department == .montage ? "     Kilometer: \(WorkTime.formatted(r.totalKM))" : ""))
+        paragraph("Gesamtstunden: \(WorkTime.formatted(r.totalHours))" + (r.department == .montage ? "     Kilometer: \(WorkTime.formatted(r.totalKM))" : ""), bold: true)
         block(r.department == .montage ? "Ausgeführte Arbeiten" : "ARBEITSBERICHT", r.work)
         let materials = r.parts.filter { !$0.quantity.isEmpty || !$0.description.isEmpty || (r.department == .karcher && !$0.articleNumber.isEmpty) }
         if r.department == .karcher {
@@ -172,23 +185,23 @@ private final class PDFLayout {
             for i in 0..<half { rows.append([materials[i].quantity,materials[i].description,i+half < materials.count ? materials[i+half].quantity : "",i+half < materials.count ? materials[i+half].description : ""]) }
             table("Material / zu berechnende Ersatzteile", headings: ["Menge","Bezeichnung","Menge","Bezeichnung"], rows: rows, fractions: [0.08,0.42,0.08,0.42])
         }
-        if r.department == .montage { block("Kundenbestätigung", [(r.machineOk,"Maschinen / Anlagen in Ordnung"),(r.workOk,"Arbeiten ordnungsgemäß ausgeführt"),(r.paid,"Gegen Bezahlung")].map { ($0.0 ? "[X] " : "[ ] ") + $0.1 }.joined(separator: "\n")) }
+        if r.department == .montage { heading("Kundenbestätigung"); paragraph([(r.machineOk,"Maschinen / Anlagen in Ordnung"),(r.workOk,"Arbeiten ordnungsgemäß ausgeführt"),(r.paid,"Gegen Bezahlung")].map { ($0.0 ? "[X] " : "[ ] ") + $0.1 }.joined(separator: "    "), size: 8) }
         // Sehr lange Namen vollständig umbrechen statt sie in der Signaturhöhe abzuschneiden.
         let customerNameIsLong = height(text(r.signer), width: width / 2 - 12) > 22
         let technicianNameIsLong = height(text(r.technician), width: width / 2 - 12) > 22
         if customerNameIsLong { block("Name des Kunden", r.signer) }
         if r.department == .karcher && technicianNameIsLong { block("Name des Monteurs", r.technician) }
-        if bottom - y < 155 { page() }
+        if bottom - y < 112 { page() }
         heading("Bestätigung · " + date(r.confirmedDate))
         if r.department == .karcher { signature(r.technicianSignature, title: "Unterschrift Monteur", x: left, name: technicianNameIsLong ? "Siehe Name des Monteurs" : r.technician) }
         else { text("Datum: " + date(r.confirmedDate), size: 9).draw(in: CGRect(x: left, y: y, width: width / 2, height: 24)) }
         signature(r.customerSignature, title: "Unterschrift Kunde", x: left + width / 2, name: customerNameIsLong ? "Siehe Name des Kunden" : r.signer)
-        y += 108
-        if r.signatureAccepted { block("Bestätigungstext", Report.confirmation) }
-        if r.department == .montage { block("Abrechnungsgrundlage", "Dieser Arbeitsnachweis dient als Grundlage für die Abrechnung der eingetragenen Tätigkeit.") }
+        y += 88
+        if r.signatureAccepted { paragraph(Report.confirmation, size: 7) }
+        if r.department == .montage { paragraph("Dieser Arbeitsnachweis dient als Grundlage für die Abrechnung der eingetragenen Tätigkeit.", size: 7) }
         let status: String
         if let finalizedAt = r.finalizedAt { let f = DateFormatter(); f.locale = Locale(identifier: "de_DE"); f.dateStyle = .medium; f.timeStyle = .medium; status = "Abgeschlossen am \(f.string(from: finalizedAt)) (Gerätezeit)\nBericht-ID: \(r.id.uuidString)" }
         else { status = "Entwurf – noch nicht abgeschlossen\nBericht-ID: \(r.id.uuidString)" }
-        block("Berichtsstatus", status)
+        paragraph(status, size: 7)
     }
 }

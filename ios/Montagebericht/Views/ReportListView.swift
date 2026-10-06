@@ -56,7 +56,14 @@ struct ReportListView: View {
             if let selection, let report = store.reports.first(where: { $0.id == selection }) {
                 ReportEditor(report: report, onSelect: { self.selection = $0 }).id(report.id)
             } else {
-                ContentUnavailableView("Montagebericht", systemImage: "doc.text", description: Text("Über + einen Bericht erstellen oder einen gespeicherten Bericht auswählen."))
+                ContentUnavailableView {
+                    Label("Montagebericht", systemImage: "doc.text")
+                } description: {
+                    Text("Einen neuen Bericht erstellen oder über die Seitenleiste einen gespeicherten Bericht auswählen.")
+                } actions: {
+                    Button("Neuer Montagebericht", systemImage: "plus") { create(.montage) }.buttonStyle(.borderedProminent)
+                    Button("Neuer Kärcher-Servicebericht") { create(.karcher) }.buttonStyle(.bordered)
+                }
             }
         }
         .sheet(isPresented: $showSettings) { OfficeSettingsView(settings: store.settings) }

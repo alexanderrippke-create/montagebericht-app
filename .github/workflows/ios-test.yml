@@ -1,6 +1,11 @@
 name: Build iOS Test
 on:
   workflow_dispatch:
+    inputs:
+      capture_ui:
+        description: 'Optional: Simulator-Screenshots erstellen (kann auf Hosted Runnern langsam sein)'
+        type: boolean
+        default: false
   push:
     branches: [ios-app, main]
     paths: ['ios/**', '.github/workflows/ios-test.yml']
@@ -71,6 +76,8 @@ jobs:
       - name: Export PDF test samples
         run: xcrun xcresulttool export attachments --path build/iPad.xcresult --output-path build/pdf-samples
       - name: Capture native app
+        if: github.event_name == 'workflow_dispatch' && inputs.capture_ui
+        continue-on-error: true
         timeout-minutes: 6
         run: |
           set -euo pipefail
