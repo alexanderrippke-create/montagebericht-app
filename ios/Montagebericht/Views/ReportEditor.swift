@@ -104,7 +104,7 @@ struct ReportEditor: View {
                 let completed = try store.finalize(report, renderer: ReportPDF.render)
                 onSelect(completed.id)
             } }
-        } message: { Text("Die unterschriebene PDF wird lokal archiviert und diese Fassung gesperrt. Änderungen erfordern eine neue Bearbeitung und neue Unterschriften. Der ursprüngliche Entwurf bleibt erhalten.") }
+        } message: { Text("Die unterschriebene PDF wird lokal archiviert und diese Fassung gesperrt. Der Entwurf wird durch die abgeschlossene Fassung ersetzt. Änderungen erfordern eine neue Bearbeitung und neue Unterschriften.") }
         .alert("Hinweis", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("OK") { error = nil } } message: { Text(error ?? "") }
         .onChange(of: report) { _, _ in
             guard !report.isFinalized else { return }

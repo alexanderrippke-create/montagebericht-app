@@ -31,7 +31,7 @@ const appProduct = object('appProduct','isa = PBXFileReference; explicitFileType
 const testProduct = object('testProduct','isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = MontageberichtTests.xctest; sourceTree = BUILT_PRODUCTS_DIR;');
 const products = object('products',`isa = PBXGroup; name = Products; children = ${list([appProduct,testProduct])}; sourceTree = "<group>";`);
 const group = object('rootGroup',`isa = PBXGroup; children = ${list([...sourceRefs,...testRefs,...resourceRefs,products])}; sourceTree = "<group>";`);
-const common = {IPHONEOS_DEPLOYMENT_TARGET:'17.0',SWIFT_VERSION:'5.0',CLANG_ENABLE_MODULES:'YES',CLANG_ENABLE_OBJC_ARC:'YES',GCC_C_LANGUAGE_STANDARD:'gnu17',SDKROOT:'iphoneos',ENABLE_USER_SCRIPT_SANDBOXING:'YES',SWIFT_STRICT_CONCURRENCY:'targeted'};
+const common = {IPHONEOS_DEPLOYMENT_TARGET:'17.0',SWIFT_VERSION:'5.0',CLANG_ENABLE_MODULES:'YES',CLANG_ENABLE_OBJC_ARC:'YES',GCC_C_LANGUAGE_STANDARD:'gnu17',SDKROOT:'iphoneos',ENABLE_USER_SCRIPT_SANDBOXING:'YES',SWIFT_STRICT_CONCURRENCY:'targeted',SWIFT_TREAT_WARNINGS_AS_ERRORS:'YES',COPY_PHASE_STRIP:'NO'};
 const settings = data => Object.entries(data).map(([key,value]) => `${key} = ${quote(value)};`).join(' ');
 function configurations(name, extra) {
   const configs = ['Debug','Release'].map(mode => object(`config:${name}:${mode}`,`isa = XCBuildConfiguration; name = ${mode}; buildSettings = { ${settings({...common, ...extra, SWIFT_OPTIMIZATION_LEVEL:mode === 'Debug' ? '-Onone':'-O', DEBUG_INFORMATION_FORMAT:mode === 'Debug' ? 'dwarf':'dwarf-with-dsym', ...(mode === 'Debug' ? {ENABLE_TESTABILITY:'YES',SWIFT_ACTIVE_COMPILATION_CONDITIONS:'DEBUG'}:{})})} };`));

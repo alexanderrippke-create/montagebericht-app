@@ -100,6 +100,7 @@ struct Report: Codable, Identifiable, Equatable {
     var technicianSignature: Data? = nil
     var finalizedAt: Date? = nil
     var archiveSHA256: String? = nil
+    var replacesDraftID: UUID? = nil
     var isFinalized: Bool { finalizedAt != nil }
     var totalHours: Double { times.reduce(0) { $0 + WorkTime.number($1.hours) } }
     var totalKM: Double { times.reduce(0) { $0 + WorkTime.number($1.km) } }
@@ -149,7 +150,7 @@ struct Report: Codable, Identifiable, Equatable {
     func editableCopy() -> Report {
         var copy = self
         copy.id = UUID(); copy.createdAt = Date(); copy.updatedAt = Date()
-        copy.finalizedAt = nil; copy.archiveSHA256 = nil
+        copy.finalizedAt = nil; copy.archiveSHA256 = nil; copy.replacesDraftID = nil
         copy.customerSignature = nil; copy.technicianSignature = nil; copy.signatureAccepted = false
         return copy
     }

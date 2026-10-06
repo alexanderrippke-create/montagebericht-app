@@ -74,6 +74,13 @@ final class MontageberichtTests: XCTestCase {
         try Data("broken".utf8).write(to: file)
         let loaded = ReportStore(root: url); XCTAssertNotNil(loaded.issue); XCTAssertTrue(loaded.reports.isEmpty); XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
     }
+    func testCorruptSettingsDoNotHideReports() throws {
+        let url = root(); defer { try? FileManager.default.removeItem(at: url) }
+        let store = ReportStore(root: url); try store.save(sample())
+        try Data("broken".utf8).write(to: url.appendingPathComponent("settings.json"))
+        let reloaded = ReportStore(root: url)
+        XCTAssertEqual(reloaded.reports.count,1); XCTAssertNotNil(reloaded.issue)
+    }
     func testStorageFailure() throws {
         let url = root(); try Data("file".utf8).write(to: url); defer { try? FileManager.default.removeItem(at: url) }
         let store = ReportStore(root: url); XCTAssertNotNil(store.issue); XCTAssertThrowsError(try store.save(sample()))
@@ -82,7 +89,9 @@ final class MontageberichtTests: XCTestCase {
         let url = root(); defer { try? FileManager.default.removeItem(at: url) }
         let store = ReportStore(root: url); let source = sample(); try store.save(source)
         let archived = try store.finalize(source, renderer: ReportPDF.render)
-        XCTAssertTrue(archived.isFinalized); XCTAssertEqual(store.reports.count,2)
+        XCTAssertTrue(archived.isFinalized); XCTAssertEqual(store.reports.count,1)
+        XCTAssertEqual(ReportStore(root: url).reports.count,1)
+        XCTAssertThrowsError(try store.save(source))
         let data = try store.archivedPDF(archived)
         XCTAssertTrue(PDFDocument(data: data)?.string?.contains(archived.id.uuidString) == true)
         XCTAssertThrowsError(try store.save(archived))
@@ -128,6 +137,7 @@ final class MontageberichtTests: XCTestCase {
         var report = sample(); report.customerSignature = nil
         let data = try ReportPDF.render(report); let document = try XCTUnwrap(PDFDocument(data:data))
         XCTAssertTrue(document.string?.contains("Müller") == true); XCTAssertTrue(document.string?.contains("Entwurf") == true)
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "com.adobe.pdf"); attachment.name = "Montagebericht-Test"; attachment.lifetime = .keepAlways; add(attachment)
     }
     func testMultiPagePDFContainsEndingAndLongTableCells() throws {
         var report = sample(); report.work = String(repeating:"Lange Tätigkeit mit Umlauten äöü und Sonderzeichen. ",count:1000) + "ARBEITSENDE"
@@ -135,11 +145,16 @@ final class MontageberichtTests: XCTestCase {
         report.parts[0].description = String(repeating:"Ersatzteil ",count:400) + "MATERIALENDE"
         let data = try ReportPDF.render(report); let document = try XCTUnwrap(PDFDocument(data:data)); let text = document.string ?? ""
         XCTAssertGreaterThan(document.pageCount,2)
-        for end in ["ARBEITSENDE","TABELLENENDE","MATERIALENDE",report.id.uuidString] { XCTAssertTrue(text.contains(end), "Missing \(end)") }
+        // PDFKit inserts line breaks at visual wrapping positions, also inside long words.
+        let compact = text.components(separatedBy: .whitespacesAndNewlines).joined()
+        for end in ["ARBEITSENDE","TABELLENENDE","MATERIALENDE",report.id.uuidString] { XCTAssertTrue(compact.contains(end), "Missing \(end)") }
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "com.adobe.pdf"); attachment.name = "Montagebericht-Mehrseitig"; attachment.lifetime = .keepAlways; add(attachment)
     }
     func testKarcherPDF() throws {
         var report = sample(); report.department = .karcher; report.serviceKinds = ["Wartung","UVV-/VDE-Prüfung"]; report.parts[0].articleNumber = "6.123-456"; report.technicianSignature = report.customerSignature
-        let text = PDFDocument(data:try ReportPDF.render(report))?.string ?? ""
+        let data = try ReportPDF.render(report)
+        let text = PDFDocument(data:data)?.string ?? ""
         XCTAssertTrue(text.contains("SERVICEBERICHT")); XCTAssertTrue(text.contains("6.123-456")); XCTAssertTrue(text.contains("Unterschrift Monteur"))
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "com.adobe.pdf"); attachment.name = "Kaercher-Test"; attachment.lifetime = .keepAlways; add(attachment)
     }
 }

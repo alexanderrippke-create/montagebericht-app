@@ -39,7 +39,7 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as env:
               for prefix, name in [('IPAD', 'iPad'), ('IPHONE', 'iPhone')]:
                   device = next(d for d in pool if d['name'].startswith(name))
-                  env.write(f"{prefix}_DESTINATION=platform=iOS Simulator,id={device['udid']}\n")
+                  env.write(f"{prefix}_DESTINATION=platform=iOS Simulator,arch=arm64,id={device['udid']}\n")
           PY
       - name: Tests on iPad
         run: |
@@ -59,6 +59,18 @@ jobs:
           (cd build/package && zip -qry ../Montagebericht-unsigned.ipa Payload)
           printf '%s\n' 'Unsigned arm64 device package. NOT directly installable. Must be signed locally with your own Apple account, e.g. AltStore Classic. No provisioning profile or Apple credentials included.' > build/READ-ME-FIRST.txt
           shasum -a 256 build/Montagebericht-unsigned.ipa > build/SHA256.txt
+      - name: Capture native app and export PDF test samples
+        run: |
+          set -euo pipefail
+          for device in "$IPAD_DESTINATION" "$IPHONE_DESTINATION"; do
+            udid="${device##*id=}"
+            xcrun simctl bootstatus "$udid" -b
+            xcrun simctl install "$udid" build/DerivedData/Build/Products/Debug-iphonesimulator/Montagebericht.app
+            xcrun simctl launch "$udid" de.gustavschmidt.montagebericht
+            sleep 3
+            xcrun simctl io "$udid" screenshot "build/screenshot-$udid.png"
+          done
+          xcrun xcresulttool export attachments --path build/iPad.xcresult --output-path build/pdf-samples
       - name: Upload device package for local test signing
         uses: actions/upload-artifact@v4
         with:
@@ -76,4 +88,6 @@ jobs:
           path: |
             ios/build/*.xcresult
             ios/build/*.log
+            ios/build/*.png
+            ios/build/pdf-samples
           retention-days: 14

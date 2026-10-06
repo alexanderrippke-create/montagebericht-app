@@ -32,7 +32,13 @@ final class ReportStore: ObservableObject {
         do {
             try manager.createDirectory(at: root, withIntermediateDirectories: true)
             let settingsURL = root.appendingPathComponent("settings.json")
-            if manager.fileExists(atPath: settingsURL.path) { settings = try decode(OfficeSettings.self, from: Data(contentsOf: settingsURL)) }
+            if manager.fileExists(atPath: settingsURL.path) {
+                do {
+                    let loadedSettings = try decode(OfficeSettings.self, from: Data(contentsOf: settingsURL))
+                    if let validation = loadedSettings.validation { throw ReportError.message(validation) }
+                    settings = loadedSettings
+                } catch { issue = "Sachbearbeiter-Einstellungen konnten nicht geladen werden. Berichte bleiben verfügbar; bitte Einstellungen prüfen. Originaldatei bleibt erhalten." }
+            }
             var loaded: [Report] = []; var failed = 0
             for url in try manager.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) where UUID(uuidString: url.lastPathComponent) != nil {
                 do {
@@ -41,11 +47,13 @@ final class ReportStore: ObservableObject {
                     loaded.append(report)
                 } catch { failed += 1 }
             }
-            reports = loaded.sorted { $0.updatedAt > $1.updatedAt }
+            let replaced = Set(loaded.filter(\.isFinalized).compactMap(\.replacesDraftID))
+            reports = loaded.filter { !replaced.contains($0.id) }.sorted { $0.updatedAt > $1.updatedAt }
             if failed > 0 { issue = "\(failed) Bericht(e) konnten nicht geladen werden. Die Originaldateien bleiben erhalten. Bitte Datensicherung prüfen." }
         } catch { issue = "Lokale Daten konnten nicht geladen werden: \(error.localizedDescription)" }
     }
     func save(_ source: Report) throws {
+        if reports.contains(where: { $0.isFinalized && $0.replacesDraftID == source.id }) { throw ReportError.message("Dieser Entwurf wurde bereits abgeschlossen. Bitte eine neue Bearbeitung erstellen.") }
         if let existing = reports.first(where: { $0.id == source.id }), existing.isFinalized { throw ReportError.message("Abgeschlossene Berichte sind gesperrt. Bitte eine neue Bearbeitung erstellen.") }
         var report = source; report.updatedAt = Date()
         let target = folder(report.id)
@@ -62,6 +70,7 @@ final class ReportStore: ObservableObject {
         // Eine komplette neue Fassung wird atomar als eigener Ordner veröffentlicht.
         // Der ursprüngliche Entwurf bleibt bei jedem Fehler erhalten.
         completed.id = UUID()
+        completed.replacesDraftID = source.id
         // PDF muss dieselbe endgültige ID tragen.
         let finalPDF = try renderer(completed)
         completed.archiveSHA256 = Self.digest(finalPDF)
@@ -71,8 +80,11 @@ final class ReportStore: ObservableObject {
         try finalPDF.write(to: staging.appendingPathComponent("bericht.pdf"), options: .completeFileProtectionUnlessOpen)
         try encode(completed).write(to: staging.appendingPathComponent("report.json"), options: .completeFileProtectionUnlessOpen)
         try manager.moveItem(at: staging, to: folder(completed.id))
+        reports.removeAll { $0.id == source.id }
         reports.insert(completed, at: 0)
-        // Den ursprünglichen Entwurf behalten; kein verlustbehafteter Mehrdatei-Commit.
+        // Erst nach Veröffentlichung des vollständigen Archivs den Entwurf entfernen.
+        // Bei Abbruch/Dateifehler verhindert replacesDraftID seine Wiederverwendung.
+        if manager.fileExists(atPath: folder(source.id).path) { try? manager.removeItem(at: folder(source.id)) }
         return completed
     }
     static func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
@@ -82,6 +94,7 @@ final class ReportStore: ObservableObject {
         return data
     }
     func delete(_ report: Report) throws {
+        if let original = report.replacesDraftID, manager.fileExists(atPath: folder(original).path) { try manager.removeItem(at: folder(original)) }
         try manager.removeItem(at: folder(report.id)); reports.removeAll { $0.id == report.id }
     }
     func saveSettings(_ value: OfficeSettings) throws {

@@ -23,7 +23,7 @@ Referenz: lokale produktive Windows-App, Paket 0.1.4, einschließlich der vorhan
 | Prüfen (`app.js`) | Vollständigkeitsprüfung | iOS prüft Abschlussbedingungen; kein Mailzwang für lokalen Abschluss |
 | Kundenbestätigung, Häkchen, Datum/Name | Vollständig gespeichert | Kärcher-PDF zeigt wie Quelle nur Datum/Signaturen |
 | Unterschrift Kunde und Kärcher-Monteur | PencilKit, Finger/Pencil, löschen, speichern | Keine Maus erforderlich |
-| Gesperrter Abschluss, neue Bearbeitung | Separate abgeschlossene Fassung; neue Kopie ohne Unterschriften | Ursprünglichen Entwurf bewusst behalten |
+| Gesperrter Abschluss, neue Bearbeitung | Separate abgeschlossene Fassung; neue Kopie ohne Unterschriften | Ursprünglichen Entwurf erst nach erfolgreicher Archivierung ersetzen |
 | PDF-Archiv, SHA-256 (`main.cjs`) | JSON-Nachweis und Original-PDF, Integritätsprüfung beim Export | App-Sandbox statt Windows-Dokumente; Gerätezeit bleibt Gerätezeit |
 | A4-Drucklayout (`print.css`, `app.js`, `karcher.js`) | Original-Logo; gleiche Felder, Überschriften, Zeiten, Materialpaare, Signaturen, Footer | Native CoreText-Ränder/Schriftmetriken; wiederholte Seitenköpfe, keine pixelidentische HTML-Druckausgabe |
 | Aufgaben-/Arbeitsbericht mit Zeilenumbrüchen | Vollständiges CoreText-Layout | Beliebig lange Texte/Feldzellen auf Folgeseiten |
