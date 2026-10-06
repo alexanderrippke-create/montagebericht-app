@@ -98,9 +98,17 @@ final class ReportStore: ObservableObject {
         try manager.removeItem(at: folder(report.id)); reports.removeAll { $0.id == report.id }
     }
     func saveSettings(_ value: OfficeSettings) throws {
-        if let error = value.validation { throw ReportError.message(error) }
-        try encode(value).write(to: root.appendingPathComponent("settings.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
-        settings = value
+        var cleaned = value
+        cleaned.defaultName = cleaned.defaultName.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned.contacts = cleaned.contacts.map { contact in
+            var contact = contact
+            contact.name = contact.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            contact.email = contact.email.trimmingCharacters(in: .whitespacesAndNewlines)
+            return contact
+        }
+        if let error = cleaned.validation { throw ReportError.message(error) }
+        try encode(cleaned).write(to: root.appendingPathComponent("settings.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
+        settings = cleaned
     }
     func backupURL(_ report: Report) throws -> URL {
         let url = manager.temporaryDirectory.appendingPathComponent("Montagebericht-\(report.id).json")

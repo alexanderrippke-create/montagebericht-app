@@ -170,7 +170,8 @@ struct OfficeSettings: Codable, Equatable {
     }
     func resolve(_ name: String) -> OfficeContact? {
         let requested = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return contacts.first { $0.name.caseInsensitiveCompare(requested.isEmpty ? defaultName : requested) == .orderedSame }
+        let resolved = (requested.isEmpty ? defaultName : requested).trimmingCharacters(in: .whitespacesAndNewlines)
+        return contacts.first { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(resolved) == .orderedSame }
     }
     var validation: String? {
         guard !contacts.isEmpty, resolve(defaultName) != nil else { return "Bitte einen Standardempfänger auswählen." }

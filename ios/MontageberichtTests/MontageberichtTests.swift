@@ -63,7 +63,7 @@ final class MontageberichtTests: XCTestCase {
         let store = ReportStore(root: url); let report = sample(); try store.save(report)
         let reloaded = ReportStore(root: url)
         XCTAssertEqual(reloaded.reports.count,1); XCTAssertEqual(reloaded.reports[0].customerSignature,report.customerSignature)
-        var settings = OfficeSettings(); settings.contacts.append(OfficeContact(name: "Davina", email: "davina@example.com")); settings.defaultName = "Davina"
+        var settings = OfficeSettings(); settings.contacts.append(OfficeContact(name: " Davina ", email: " davina@example.com ")); settings.defaultName = " Davina "
         try reloaded.saveSettings(settings); XCTAssertEqual(ReportStore(root: url).settings.defaultName,"Davina")
         try reloaded.delete(reloaded.reports[0]); XCTAssertTrue(ReportStore(root: url).reports.isEmpty)
     }
