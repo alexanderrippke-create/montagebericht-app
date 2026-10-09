@@ -146,6 +146,11 @@ final class ReportStore: ObservableObject {
         let data = try Data(contentsOf: url)
         guard data.count <= 20_000_000 else { throw ReportError.message("Die Sicherung ist zu groß (maximal 20 MB).") }
         if let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any], envelope["format"] as? String == "montagebericht" {
+            for (id, bookmark) in documentBookmarks {
+                var stale = false
+                if let existingURL = try? URL(resolvingBookmarkData: bookmark, options: .withoutUI, relativeTo: nil, bookmarkDataIsStale: &stale), existingURL.standardizedFileURL == url.standardizedFileURL,
+                   let report = reports.first(where: { $0.id.uuidString == id }) { return pendingReports[report.id] ?? report }
+            }
             let (source, archive) = try PortableReport.decode(data)
             var report = source
             if reports.contains(where: { $0.id == report.id }) {

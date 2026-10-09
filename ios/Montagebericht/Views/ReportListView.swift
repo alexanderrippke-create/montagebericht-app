@@ -63,11 +63,11 @@ struct ReportListView: View {
                             ForEach(openIDs, id: \.self) { id in
                                 if let item = store.reports.first(where: { $0.id == id }) {
                                     Button((item.customer.isEmpty ? "Neuer Bericht" : item.customer) + (store.pendingReports[id] == nil ? "" : " *")) { self.selection = id }
-                                        .buttonStyle(.bordered).tint(selection == id ? .accentColor : .secondary)
-                                    Button { closeTab(id) } label: { Image(systemName: "xmark.circle") }.accessibilityLabel("Bericht schließen")
+                                        .buttonStyle(.bordered).tint(selection == id ? .accentColor : .secondary).frame(minHeight: 44)
+                                    Button { closeTab(id) } label: { Image(systemName: "xmark.circle") }.frame(minWidth: 44, minHeight: 44).accessibilityLabel("Bericht schließen")
                                 }
                             }
-                            Menu { Button("Neuer Montagebericht") { create(.montage) }; Button("Neuer Kärcher-Bericht") { create(.karcher) }; Button("Bericht öffnen") { importing = true } } label: { Image(systemName: "plus") }
+                            Menu { Button("Neuer Montagebericht") { create(.montage) }; Button("Neuer Kärcher-Bericht") { create(.karcher) }; Button("Bericht öffnen") { importing = true } } label: { Image(systemName: "plus").frame(minWidth: 44, minHeight: 44) }
                         }.padding(8)
                     }
                     ReportEditor(report: store.pendingReports[report.id] ?? report, onSelect: { self.selection = $0 }).id(report.id)

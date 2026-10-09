@@ -45,7 +45,7 @@ final class MontageberichtTests: XCTestCase {
         XCTAssertEqual(windows.times[0].hours, source.times[0].hours)
         XCTAssertTrue(try ReportPDF.render(windows).starts(with: Data("%PDF".utf8)))
     }
-    func testPortableArchiveImportAndTamperRejection() throws {
+    func testPortableArchiveImportAndUnknownVersionRejection() throws {
         let sourceRoot = root(), targetRoot = root()
         defer { try? FileManager.default.removeItem(at: sourceRoot); try? FileManager.default.removeItem(at: targetRoot) }
         let source = ReportStore(root: sourceRoot), target = ReportStore(root: targetRoot)

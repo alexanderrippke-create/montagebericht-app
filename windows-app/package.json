@@ -4,14 +4,16 @@
   "description": "Montagebericht für Windows",
   "main": "main.cjs",
   "scripts": {
-    "start": "electron .",
-    "package": "electron-packager . Montagebericht --platform=win32 --arch=x64 --out=release --overwrite --ignore=release --ignore=tmp",
-    "installer": "electron-builder --win nsis --x64 --publish never"
+    "start": "node node_modules/electron/cli.js .",
+    "package": "node node_modules/@electron/packager/bin/electron-packager.mjs . Montagebericht --platform=win32 --arch=x64 --out=release --overwrite --ignore=release --ignore=tmp",
+    "installer": "node node_modules/electron-builder/cli.js --win nsis --x64 --publish never",
+    "test": "node tests/run.cjs"
   },
   "devDependencies": {
     "@electron/packager": "^19.0.0",
     "electron": "^44.0.0",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "playwright": "1.62.1"
   },
   "license": "UNLICENSED",
   "private": true,
