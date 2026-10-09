@@ -31,11 +31,13 @@ final class MontageberichtTests: XCTestCase {
         XCTAssertEqual(restored.settings.resolve("Neu")?.email, "neu@example.de")
     }
     func testPortableRoundTripAndWindowsPNG() throws {
-        let source = sample()
+        var source = sample(); source.officeContact = "Externer Kontakt"
         let data = try PortableReport.export(source, office: "office@example.de", archive: nil)
         let (restored, _) = try PortableReport.decode(data)
         XCTAssertEqual(restored.customer, source.customer)
         XCTAssertEqual(restored.officeContact, source.officeContact)
+        XCTAssertEqual(restored.officeEmail, "office@example.de")
+        XCTAssertEqual(restored.officeRecipient(OfficeSettings())?.email, "office@example.de")
         XCTAssertEqual(restored.customerSignature, source.customerSignature)
         var envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         var snapshot = try XCTUnwrap(envelope["report"] as? [String: Any])

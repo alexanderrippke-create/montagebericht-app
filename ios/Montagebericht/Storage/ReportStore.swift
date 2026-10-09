@@ -58,7 +58,7 @@ final class ReportStore: ObservableObject {
     func save(_ source: Report) throws {
         if reports.contains(where: { $0.isFinalized && $0.replacesDraftID == source.id }) { throw ReportError.message("Dieser Entwurf wurde bereits abgeschlossen. Bitte eine neue Bearbeitung erstellen.") }
         if let existing = reports.first(where: { $0.id == source.id }), existing.isFinalized { throw ReportError.message("Abgeschlossene Berichte sind gesperrt. Bitte eine neue Bearbeitung erstellen.") }
-        var report = source; report.updatedAt = Date()
+        var report = source; report.officeEmail = source.officeRecipient(settings)?.email; report.updatedAt = Date()
         let target = folder(report.id)
         try manager.createDirectory(at: target, withIntermediateDirectories: true)
         try encode(report).write(to: target.appendingPathComponent("report.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
@@ -138,7 +138,7 @@ final class ReportStore: ObservableObject {
         var stale = false
         let url = try URL(resolvingBookmarkData: bookmark, options: .withoutUI, relativeTo: nil, bookmarkDataIsStale: &stale)
         let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
-        try PortableReport.export(report, office: settings.resolve(report.officeContact)?.email ?? "", archive: nil).write(to: url, options: [.atomic])
+        try PortableReport.export(report, office: report.officeRecipient(settings)?.email ?? "", archive: nil).write(to: url, options: [.atomic])
         if stale { try associateDocument(url, report: report) }
     }
     func portableURL(_ report: Report) throws -> URL {

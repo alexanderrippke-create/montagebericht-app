@@ -54,3 +54,5 @@ Zusätzlich geändert: `Storage/PortableReport.swift` (neu), `Models/Report.swif
 Windows-NSIS-Build 0.1.5 erfolgreich. Installer unter windows-app/installer/Montagebericht-Setup-0.1.5.exe (lokales Build-Artefakt, nicht eingecheckt und nicht installiert).
 
 Weiterhin angepasst: README.md mit Start-/Test-/Build-Befehlen, ios/scripts/verify-local.cjs für das nun gemeinsame Repository, windows-app/tests/run.cjs sowie reproduzierbare Playwright-Testabhängigkeit.
+
+Beim Austausch bleibt außerdem die im Bericht gespeicherte Sachbearbeiter-E-Mail nutzbar, wenn der ausgewählte Name auf dem Zielgerät noch nicht in den lokalen Einstellungen existiert. Bei ausdrücklich geänderter Sachbearbeiterwahl wird diese Rückfalladresse verworfen.

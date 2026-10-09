@@ -74,6 +74,7 @@ struct Report: Codable, Identifiable, Equatable {
     var purchaseDate: Date? = nil
     var date = Date()
     var officeContact = ""
+    var officeEmail: String? = nil
     var customerNumber = ""
     var machine = ""
     var machineId = ""
@@ -101,6 +102,11 @@ struct Report: Codable, Identifiable, Equatable {
     var finalizedAt: Date? = nil
     var archiveSHA256: String? = nil
     var replacesDraftID: UUID? = nil
+    func officeRecipient(_ settings: OfficeSettings) -> OfficeContact? {
+        if let contact = settings.resolve(officeContact) { return contact }
+        if let officeEmail, OfficeSettings.validEmail(officeEmail) { return OfficeContact(name: officeContact.isEmpty ? "Büro" : officeContact, email: officeEmail) }
+        return nil
+    }
     var isFinalized: Bool { finalizedAt != nil }
     var totalHours: Double { times.reduce(0) { $0 + WorkTime.number($1.hours) } }
     var totalKM: Double { times.reduce(0) { $0 + WorkTime.number($1.km) } }

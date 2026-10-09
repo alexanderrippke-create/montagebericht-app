@@ -52,6 +52,7 @@ enum PortableReport {
         let defaults = try object(Report())
         let excluded: Set<String> = ["schemaVersion", "id", "department", "createdAt", "updatedAt", "times", "parts", "customerSignature", "technicianSignature", "date", "confirmedDate", "purchaseDate", "compressorNextDate", "finalizedAt", "archiveSHA256", "replacesDraftID"]
         for (key, value) in fields where !excluded.contains(key) && defaults[key] != nil { native[key] = value }
+        native["officeEmail"] = fields["office"] as? String
         native["schemaVersion"] = 1
         native["department"] = department
         let date = formatter("yyyy-MM-dd"), clock = formatter("yyyy-MM-dd HH:mm"), iso = ISO8601DateFormatter()

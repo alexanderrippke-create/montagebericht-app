@@ -71,7 +71,7 @@ struct ReportEditor: View {
                 Button("PDF anzeigen", systemImage: "doc.richtext") { perform { preview = try ReportPDF.export(report, store: store) } }
                 Button("PDF teilen / in Dateien sichern", systemImage: "square.and.arrow.up") { perform { share = try ReportPDF.export(report, store: store) } }
                 Button("E-Mail-Entwurf mit PDF", systemImage: "envelope") { prepareMail() }
-                if let office = store.settings.resolve(report.officeContact) { Text("Vorgesehene Empfänger: \(office.name) (\(office.email))" + (report.email.isEmpty ? "" : " · " + report.email)).font(.caption) }
+                if let office = report.officeRecipient(store.settings) { Text("Vorgesehene Empfänger: \(office.name) (\(office.email))" + (report.email.isEmpty ? "" : " · " + report.email)).font(.caption) }
                 else { Text("Sachbearbeiter ist nicht hinterlegt. Bitte Einstellungen prüfen.").foregroundStyle(.orange) }
                 Button("Speichern unter / Berichtsdatei") { perform {
                     let archive = report.isFinalized ? try store.archivedPDF(report) : nil
@@ -120,6 +120,7 @@ struct ReportEditor: View {
             } }
         } message: { Text("Die unterschriebene PDF wird lokal archiviert und diese Fassung gesperrt. Der Entwurf wird durch die abgeschlossene Fassung ersetzt. Änderungen erfordern eine neue Bearbeitung und neue Unterschriften.") }
         .alert("Hinweis", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("OK") { error = nil } } message: { Text(error ?? "") }
+        .onChange(of: report.officeContact) { _, _ in report.officeEmail = store.settings.resolve(report.officeContact)?.email }
         .onChange(of: report) { _, _ in
             guard !report.isFinalized else { return }
             saveTask?.cancel()
