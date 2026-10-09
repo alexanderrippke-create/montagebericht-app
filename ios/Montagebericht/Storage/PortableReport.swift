@@ -38,7 +38,7 @@ enum PortableReport {
             var value = try object(row); value.removeValue(forKey: "id")
             value["date"] = date.string(from: row.date); value["from"] = row.from.map { time.string(from: $0) } ?? ""; value["to"] = row.to.map { time.string(from: $0) } ?? ""; return value
         }
-        var snapshot: [String: Any] = ["fields": fields, "times": times, "parts": try report.parts.map { try object($0) }, "signature": imageURL(report.customerSignature) as Any? ?? NSNull(), "iosReport": native]
+        var snapshot: [String: Any] = ["fields": fields, "times": times, "parts": try report.parts.map { try object($0) }, "signature": imageURL(report.customerSignature).map { $0 as Any } ?? NSNull(), "iosReport": native]
         if let archive { snapshot["archive"] = ["pdf": archive.base64EncodedString(), "sha256": ReportStore.digest(archive)] }
         return try JSONSerialization.data(withJSONObject: ["format": "montagebericht", "schemaVersion": 1, "department": report.department.rawValue, "report": snapshot], options: [.prettyPrinted, .sortedKeys])
     }
@@ -52,6 +52,7 @@ enum PortableReport {
         let defaults = try object(Report())
         let excluded: Set<String> = ["schemaVersion", "id", "department", "createdAt", "updatedAt", "times", "parts", "customerSignature", "technicianSignature", "date", "confirmedDate", "purchaseDate", "compressorNextDate", "finalizedAt", "archiveSHA256", "replacesDraftID"]
         for (key, value) in fields where !excluded.contains(key) && defaults[key] != nil { native[key] = value }
+        native["schemaVersion"] = 1
         native["department"] = department
         let date = formatter("yyyy-MM-dd"), clock = formatter("yyyy-MM-dd HH:mm"), iso = ISO8601DateFormatter()
         for key in ["date", "confirmedDate", "purchaseDate", "compressorNextDate"] {

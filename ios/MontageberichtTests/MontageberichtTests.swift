@@ -45,6 +45,20 @@ final class MontageberichtTests: XCTestCase {
         XCTAssertEqual(windows.times[0].hours, source.times[0].hours)
         XCTAssertTrue(try ReportPDF.render(windows).starts(with: Data("%PDF".utf8)))
     }
+    func testPortableArchiveImportAndTamperRejection() throws {
+        let sourceRoot = root(), targetRoot = root()
+        defer { try? FileManager.default.removeItem(at: sourceRoot); try? FileManager.default.removeItem(at: targetRoot) }
+        let source = ReportStore(root: sourceRoot), target = ReportStore(root: targetRoot)
+        let completed = try source.finalize(sample(), renderer: ReportPDF.render)
+        let url = try source.portableURL(completed)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let imported = try target.importBackup(url)
+        XCTAssertTrue(imported.isFinalized)
+        XCTAssertEqual(try target.archivedPDF(imported), try source.archivedPDF(completed))
+        var envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        envelope["schemaVersion"] = 99
+        XCTAssertThrowsError(try PortableReport.decode(JSONSerialization.data(withJSONObject: envelope)))
+    }
     func testJSONRoundTrip() throws {
         let report = sample(); let data = try JSONEncoder().encode(report)
         XCTAssertEqual(report, try JSONDecoder().decode(Report.self, from: data))

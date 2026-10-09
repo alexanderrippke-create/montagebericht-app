@@ -9,7 +9,7 @@ Windows:
 - Formularfelder, Zeiten, Material, Sachbearbeiterwahl und eingebettete Unterschriften werden gespeichert. Abgeschlossene Berichte enthalten zusätzlich die geprüfte Archiv-PDF mit SHA-256, damit sie auf einem anderen Windows-Rechner ausgegeben werden können.
 - Obere Tab-Leiste mit Kunde, Änderungsmarkierung, Plus, Öffnen und Schließen. Jeder Tab besitzt eigenen Snapshot, Dateipfad und Speicherstand. Die vorhandenen Formulare und Abschlussfunktionen werden bei einem Wechsel frisch aus dem gewählten Snapshot aufgebaut.
 - Lokale Offline-Sitzung inklusive nicht als Datei gespeicherter Eingaben, aktive Abteilung und offene Tabs werden wiederhergestellt. Dateispeicherung bleibt unabhängig von dieser lokalen Wiederherstellung.
-- Schließwarnung für ungespeicherte Tabs und Fenster. Beim Schließen eines inaktiven Tabs mit Speichern wird zunächst dieser Tab aktiviert; danach speichern und erneut schließen.
+- Schließwarnung für ungespeicherte Tabs und Fenster. Auch inaktive Tabs können beim Schließen direkt unabhängig gespeichert werden.
 - Unterschrift wird vor dem Wiederherstellen gelöscht; verspätete Bild-Ladevorgänge dürfen keinen anderen Bericht verändern.
 - Beim Kundenwechsel im Terminimport ohne neue E-Mail wird die bisherige Kundenadresse gelöscht. Die vorherige Zuordnung war nicht mehr verlässlich.
 - Sachbearbeiter werden nicht mehr allein wegen fehlender Standardauswahl am Speichern gehindert; der erste gültige Kontakt wird Standard. Ungültige Kontakte werden weiterhin abgelehnt. Bearbeitung und Zuordnung über die vorhandenen Kontaktfelder bleiben erhalten.
@@ -29,7 +29,7 @@ Tatsächlich erfolgreich ausgeführt unter Windows:
 
 Tests starten mit Node und installiertem Playwright (`PLAYWRIGHT_MODULE` optional für den absoluten Modulpfad). Der Formulartest verwendet standardmäßig installiertes Edge; `BROWSER_CHANNEL` kann geändert werden. Electron muss einschließlich Installationsskript installiert sein. In dieser Umgebung musste das Electron-Installationsskript separat gestartet werden. npm-Aufrufe über CMD im OneDrive-Pfad mit `&` benötigen korrekt zitierte absolute Aufrufe.
 
-Native iOS-Builds, XCTest, Simulator, iPhone-/iPad-Bedienung, reale Outlook-Integration und ein tatsächlicher Prozessneustart mit produktiven Daten wurden hier nicht ausgeführt. Die vorhandene macOS-GitHub-Actions-Prüfung läuft bei iOS-Pull-Requests. Der ergänzte XCTest ist vorbereitet, nicht lokal bestanden.
+Ein echter Electron-Prozessneustart wurde mit synthetischen Testdaten erfolgreich geprüft, einschließlich hinzugefügter und bearbeiteter Sachbearbeiter sowie Bericht/Archiv. Native iOS-Builds, XCTest, Simulator, iPhone-/iPad-Bedienung und reale Outlook-Integration sind lokal unter Windows nicht ausführbar. Die vorhandene macOS-GitHub-Actions-Prüfung läuft bei iOS-Pull-Requests. Der ergänzte XCTest ist vorbereitet, nicht lokal bestanden.
 
 ## Offen / Grenzen
 
@@ -50,4 +50,4 @@ Die Windows-Funktionen sind lokal geprüft. Die iOS- und Austauschfunktionen sin
 
 Zusätzlich geändert: `Storage/PortableReport.swift` (neu), `Models/Report.swift`, `PDF/ReportPDF.swift`, `Signature/SignatureView.swift`, generiertes Xcode-Projekt. Windows-Version auf 0.1.5 erhöht.
 
-Windows-NSIS-Build erfolgreich (vor den letzten Änderungen); finaler 0.1.5-Build wird erneut geprüft.
+Windows-NSIS-Build 0.1.5 erfolgreich; der abschließende Build wird nach den letzten Regressionsergänzungen erneut erzeugt.

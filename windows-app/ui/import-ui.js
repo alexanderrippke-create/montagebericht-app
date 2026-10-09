@@ -6,5 +6,3 @@
  get('cancelImport').onclick=()=>{get('importPreview').hidden=true;status('Übernahme abgebrochen. Der Bericht wurde nicht geändert.')};
  get('applyImport').onclick=()=>{if(!get('importEmail').reportValidity()||!get('importDate').reportValidity())return;let count=0;const incomingCustomer=get('importCustomer').value.trim();if(incomingCustomer&&incomingCustomer!==form.elements.customer.value.trim()&&!get('importEmail').value.trim())form.elements.email.value='';const oldDate=form.elements.date.value;for(const [key,id]of Object.entries(mapping)){const value=get(id).value.trim();if(value||key==='officeContact'){form.elements[key].value=value;if(value)count++}}if(!count){status('Bitte mindestens eine Angabe ergänzen.');return}if(form.elements.date.value!==oldDate){for(const row of times.rows){const inputs=[...row.querySelectorAll('input')];if(inputs.filter(el=>el.dataset.key!=='date').every(el=>!el.value)){row.querySelector('[data-key="date"]').value=form.elements.date.value}}}update();get('importPreview').hidden=true;status(count+' Angaben in den Bericht übernommen. Entwurf bitte speichern.');form.elements.customer.focus()};
 })();
-
-

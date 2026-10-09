@@ -25,6 +25,3 @@
  }
  const api={parseText,parseIcs};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ReportImport=api;
 })(typeof window==='undefined'?globalThis:window);
-
-
-

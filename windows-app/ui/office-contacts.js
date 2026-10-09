@@ -16,5 +16,3 @@
  saveContacts.onclick=()=>{const contacts=[];let defaultName='';const seen=new Set();for(const row of list.children){const {name,email,radio}=row.contactInputs;const contact={name:name.value.trim(),email:email.value.trim()};if(!contact.name||!validEmail(contact.email)){message('Bitte für jeden Kontakt einen Namen und eine gültige E-Mail eingeben.');return}if(seen.has(normalize(contact.name))){message('Kontaktnamen müssen eindeutig sein.');return}seen.add(normalize(contact.name));contacts.push(contact);if(radio.checked)defaultName=contact.name}if(contacts.length&&!defaultName)defaultName=contacts[0].name;if(!contacts.length||!defaultName){message('Bitte mindestens einen Kontakt und einen Standardempfänger auswählen.');return}try{const next={contacts,defaultName};localStorage.setItem(key,JSON.stringify(next));settings=next;update();message('Sachbearbeiter auf diesem Gerät gespeichert.')}catch{message('Sachbearbeiter konnten nicht gespeichert werden.')}};
  update();
 })();
-
-
