@@ -15,6 +15,7 @@ Windows:
 - Sachbearbeiter werden nicht mehr allein wegen fehlender Standardauswahl am Speichern gehindert; der erste gültige Kontakt wird Standard. Ungültige Kontakte werden weiterhin abgelehnt. Bearbeitung und Zuordnung über die vorhandenen Kontaktfelder bleiben erhalten.
 
 Native iOS-App:
+- Beim Kalender-/Textimport eines anderen Kunden ohne E-Mail wird dieselbe Altadress-Zuordnung wie unter Windows verhindert; eigener Regressionstest.
 - Touchfähige horizontale Berichtstabs mit Plus-Menü, Einzel-Schließen und Wiederherstellung der offenen IDs/aktiven Auswahl. Auf dem iPhone horizontal scrollbar, auf dem iPad im Detailbereich.
 - Unmittelbares automatisches Speichern statt 800-ms-Verzögerung. Nicht gespeicherte Fassungen bei Schreibfehlern bleiben im Arbeitsspeicher, werden mit Stern markiert und verhindern das Schließen ihres Tabs. Beim Zurückwechseln wird diese Fassung wieder verwendet.
 - Umbenennen des Standard-Sachbearbeiters erhält die Standardzuordnung über seine bestehende ID. Neue Kontakte bleiben nach Speichern und Neustart verfügbar; Regressionstest hinzugefügt.

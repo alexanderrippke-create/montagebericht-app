@@ -59,6 +59,15 @@ final class MontageberichtTests: XCTestCase {
         envelope["schemaVersion"] = 99
         XCTAssertThrowsError(try PortableReport.decode(JSONSerialization.data(withJSONObject: envelope)))
     }
+    func testCustomerImportDoesNotKeepAnotherCustomersEmail() {
+        var report = Report(); report.customer = "Kunde A"; report.email = "a@example.de"
+        CalendarImport.apply(["customer": "Kunde A", "task": "Weiterarbeiten"], to: &report)
+        XCTAssertEqual(report.email, "a@example.de")
+        CalendarImport.apply(["customer": "Kunde B"], to: &report)
+        XCTAssertEqual(report.email, "")
+        CalendarImport.apply(["customer": "Kunde C", "email": " c@example.de "], to: &report)
+        XCTAssertEqual(report.email, "c@example.de")
+    }
     func testJSONRoundTrip() throws {
         let report = sample(); let data = try JSONEncoder().encode(report)
         XCTAssertEqual(report, try JSONDecoder().decode(Report.self, from: data))
