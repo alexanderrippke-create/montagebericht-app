@@ -25,11 +25,11 @@ Tatsächlich erfolgreich ausgeführt unter Windows:
 - `tests/workspace.cjs`: Edge/Playwright, zwei getrennte Berichte, unabhängige Texte/E-Mail, Speichern/Öffnen, Wiederherstellung ungespeicherter Eingaben nach Reload, Sachbearbeiter-Speicherung nach Reload, Import eines anderen Kunden ohne E-Mail, Druckinhalt.
 - `tests/native.cjs`: echte Electron-App, native IPC-Dateispeicherung, JSON-Inhalt mit PNG-Unterschrift, leere Unterschrift im neuen Tab, Wiederherstellung im anderen Tab und echte PDF-Erzeugung aus erneut geöffnetem Bericht. Synthetische Testdaten in temporären Profilen; keine echten Kundendaten verwendet.
 - JavaScript-Syntaxprüfungen und `git diff --check`.
-- Xcode-Projektgenerator ausgeführt; neue PortableReport.swift im Projekt aufgenommen.
+- Xcode-Projektgenerator ausgeführt; neue PortableReport.swift im Projekt aufgenommen. Lokaler Projekt-/Quellprüfer erfolgreich: alle 35 ursprünglichen Windows-Referenzdateien behalten ihre SHA-256-Hashes; Firmenlogo unverändert; Projekt reproduzierbar.
 
 Tests starten mit Node und installiertem Playwright (`PLAYWRIGHT_MODULE` optional für den absoluten Modulpfad). Der Formulartest verwendet standardmäßig installiertes Edge; `BROWSER_CHANNEL` kann geändert werden. Electron muss einschließlich Installationsskript installiert sein. In dieser Umgebung musste das Electron-Installationsskript separat gestartet werden. npm-Aufrufe über CMD im OneDrive-Pfad mit `&` benötigen korrekt zitierte absolute Aufrufe.
 
-Ein echter Electron-Prozessneustart wurde mit synthetischen Testdaten erfolgreich geprüft, einschließlich hinzugefügter und bearbeiteter Sachbearbeiter sowie Bericht/Archiv. Native iOS-Builds, XCTest, Simulator, iPhone-/iPad-Bedienung und reale Outlook-Integration sind lokal unter Windows nicht ausführbar. Die vorhandene macOS-GitHub-Actions-Prüfung läuft bei iOS-Pull-Requests. Der ergänzte XCTest ist vorbereitet, nicht lokal bestanden.
+Ein echter Electron-Prozessneustart wurde mit synthetischen Testdaten erfolgreich geprüft, einschließlich hinzugefügter und bearbeiteter Sachbearbeiter sowie Bericht/Archiv. Native iOS-Builds, XCTest, Simulator, iPhone-/iPad-Bedienung und reale Outlook-Integration sind lokal unter Windows nicht ausführbar. Die vorhandene macOS-GitHub-Actions-Prüfung läuft bei iOS-Pull-Requests. Die ergänzten XCTest-Fälle sind lokal unter Windows nicht ausführbar. Auf dem macOS-Runner bestand bereits der erste iPad-Testlauf inklusive Dateiaustausch; der abschließende iPhone-/iPad-/Geräte-Build-Status ist im Pull Request / GitHub Actions dokumentiert.
 
 ## Offen / Grenzen
 
@@ -50,4 +50,6 @@ Die Windows-Funktionen sind lokal geprüft. Die iOS- und Austauschfunktionen sin
 
 Zusätzlich geändert: `Storage/PortableReport.swift` (neu), `Models/Report.swift`, `PDF/ReportPDF.swift`, `Signature/SignatureView.swift`, generiertes Xcode-Projekt. Windows-Version auf 0.1.5 erhöht.
 
-Windows-NSIS-Build 0.1.5 erfolgreich; der abschließende Build wird nach den letzten Regressionsergänzungen erneut erzeugt.
+Windows-NSIS-Build 0.1.5 erfolgreich. Installer unter windows-app/installer/Montagebericht-Setup-0.1.5.exe (lokales Build-Artefakt, nicht eingecheckt und nicht installiert).
+
+Weiterhin angepasst: README.md mit Start-/Test-/Build-Befehlen, ios/scripts/verify-local.cjs für das nun gemeinsame Repository, windows-app/tests/run.cjs sowie reproduzierbare Playwright-Testabhängigkeit.
