@@ -16,6 +16,61 @@ final class MontageberichtTests: XCTestCase {
     func root() -> URL { FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true) }
     func fixed(_ value: String) -> Date { CalendarImport.date(value)! }
     func clock(_ hour: Int, _ minute: Int = 0) -> Date { Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: fixed("2026-10-05"))! }
+    func testRenamedDefaultContactPersists() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = ReportStore(root: url)
+        var settings = store.settings
+        settings.contacts[0].name = "Umbenannt"
+        settings.contacts.append(OfficeContact(name: "Neu", email: "neu@example.de"))
+        try store.saveSettings(settings)
+        let restored = ReportStore(root: url)
+        XCTAssertEqual(restored.settings.defaultName, "Umbenannt")
+        XCTAssertEqual(restored.settings.resolve("Alexander")?.name, "Umbenannt")
+        XCTAssertEqual(restored.settings.contacts.count, 2)
+        XCTAssertEqual(restored.settings.resolve("Neu")?.email, "neu@example.de")
+    }
+    func testPortableRoundTripAndWindowsPNG() throws {
+        var source = sample(); source.officeContact = "Externer Kontakt"
+        let data = try PortableReport.export(source, office: "office@example.de", archive: nil)
+        let (restored, _) = try PortableReport.decode(data)
+        XCTAssertEqual(restored.customer, source.customer)
+        XCTAssertEqual(restored.officeContact, source.officeContact)
+        XCTAssertEqual(restored.officeEmail, "office@example.de")
+        XCTAssertEqual(restored.officeRecipient(OfficeSettings())?.email, "office@example.de")
+        XCTAssertEqual(restored.customerSignature, source.customerSignature)
+        var envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var snapshot = try XCTUnwrap(envelope["report"] as? [String: Any])
+        snapshot.removeValue(forKey: "iosReport")
+        envelope["report"] = snapshot
+        let (windows, _) = try PortableReport.decode(JSONSerialization.data(withJSONObject: envelope))
+        XCTAssertTrue(Report.hasSignature(windows.customerSignature))
+        XCTAssertEqual(windows.times[0].hours, source.times[0].hours)
+        XCTAssertTrue(try ReportPDF.render(windows).starts(with: Data("%PDF".utf8)))
+    }
+    func testPortableArchiveImportAndUnknownVersionRejection() throws {
+        let sourceRoot = root(), targetRoot = root()
+        defer { try? FileManager.default.removeItem(at: sourceRoot); try? FileManager.default.removeItem(at: targetRoot) }
+        let source = ReportStore(root: sourceRoot), target = ReportStore(root: targetRoot)
+        let completed = try source.finalize(sample(), renderer: ReportPDF.render)
+        let url = try source.portableURL(completed)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let imported = try target.importBackup(url)
+        XCTAssertTrue(imported.isFinalized)
+        XCTAssertEqual(try target.archivedPDF(imported), try source.archivedPDF(completed))
+        var envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        envelope["schemaVersion"] = 99
+        XCTAssertThrowsError(try PortableReport.decode(JSONSerialization.data(withJSONObject: envelope)))
+    }
+    func testCustomerImportDoesNotKeepAnotherCustomersEmail() {
+        var report = Report(); report.customer = "Kunde A"; report.email = "a@example.de"
+        CalendarImport.apply(["customer": "Kunde A", "task": "Weiterarbeiten"], to: &report)
+        XCTAssertEqual(report.email, "a@example.de")
+        CalendarImport.apply(["customer": "Kunde B"], to: &report)
+        XCTAssertEqual(report.email, "")
+        CalendarImport.apply(["customer": "Kunde C", "email": " c@example.de "], to: &report)
+        XCTAssertEqual(report.email, "c@example.de")
+    }
     func testJSONRoundTrip() throws {
         let report = sample(); let data = try JSONEncoder().encode(report)
         XCTAssertEqual(report, try JSONDecoder().decode(Report.self, from: data))

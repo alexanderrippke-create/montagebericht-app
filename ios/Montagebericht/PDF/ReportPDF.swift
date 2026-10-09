@@ -149,8 +149,7 @@ private final class PDFLayout {
     }
     func signature(_ data: Data?, title: String, x: CGFloat, name: String) {
         text(name, size: 9).draw(in: CGRect(x: x, y: y, width: width / 2 - 12, height: 20))
-        if let data, let drawing = try? PKDrawing(data: data), !drawing.strokes.isEmpty, !drawing.bounds.isEmpty {
-            let image = drawing.image(from: drawing.bounds.insetBy(dx: -8, dy: -8), scale: 2)
+        if let image = PortableReport.image(data) {
             let area = CGRect(x: x, y: y + 18, width: width / 2 - 14, height: 44)
             let scale = min(area.width / image.size.width, area.height / image.size.height)
             image.draw(in: CGRect(x: x, y: area.maxY - image.size.height * scale, width: image.size.width * scale, height: image.size.height * scale))
