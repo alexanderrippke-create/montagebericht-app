@@ -162,6 +162,7 @@ struct OfficeContact: Codable, Identifiable, Equatable {
     var id = UUID()
     var name: String
     var email: String
+    var aliases: [String]? = nil
 }
 
 struct OfficeSettings: Codable, Equatable {
@@ -173,14 +174,17 @@ struct OfficeSettings: Codable, Equatable {
     func resolve(_ name: String) -> OfficeContact? {
         let requested = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolved = (requested.isEmpty ? defaultName : requested).trimmingCharacters(in: .whitespacesAndNewlines)
-        return contacts.first { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(resolved) == .orderedSame }
+        return contacts.first { ([$0.name] + ($0.aliases ?? [])).contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(resolved) == .orderedSame } }
     }
     var validation: String? {
         guard !contacts.isEmpty, resolve(defaultName) != nil else { return "Bitte einen Standardempfänger auswählen." }
         var seen = Set<String>()
         for contact in contacts {
             let name = contact.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            guard !name.isEmpty, Self.validEmail(contact.email), seen.insert(name).inserted else { return "Kontakte benötigen eindeutige Namen und gültige E-Mail-Adressen." }
+            guard !name.isEmpty, Self.validEmail(contact.email) else { return "Kontakte benötigen eindeutige Namen und gültige E-Mail-Adressen." }
+            for alias in Set(([contact.name] + (contact.aliases ?? [])).map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }) {
+                guard !alias.isEmpty, seen.insert(alias).inserted else { return "Kontaktnamen müssen einschließlich früherer Namen eindeutig sein." }
+            }
         }
         return nil
     }

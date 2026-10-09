@@ -26,6 +26,7 @@ final class MontageberichtTests: XCTestCase {
         try store.saveSettings(settings)
         let restored = ReportStore(root: url)
         XCTAssertEqual(restored.settings.defaultName, "Umbenannt")
+        XCTAssertEqual(restored.settings.resolve("Alexander")?.name, "Umbenannt")
         XCTAssertEqual(restored.settings.contacts.count, 2)
         XCTAssertEqual(restored.settings.resolve("Neu")?.email, "neu@example.de")
     }

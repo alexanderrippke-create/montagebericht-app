@@ -12,13 +12,13 @@ Windows:
 - Schließwarnung für ungespeicherte Tabs und Fenster. Auch inaktive Tabs können beim Schließen direkt unabhängig gespeichert werden.
 - Unterschrift wird vor dem Wiederherstellen gelöscht; verspätete Bild-Ladevorgänge dürfen keinen anderen Bericht verändern.
 - Beim Kundenwechsel im Terminimport ohne neue E-Mail wird die bisherige Kundenadresse gelöscht. Die vorherige Zuordnung war nicht mehr verlässlich.
-- Sachbearbeiter werden nicht mehr allein wegen fehlender Standardauswahl am Speichern gehindert; der erste gültige Kontakt wird Standard. Ungültige Kontakte werden weiterhin abgelehnt. Bearbeitung und Zuordnung über die vorhandenen Kontaktfelder bleiben erhalten.
+- Sachbearbeiter werden nicht mehr allein wegen fehlender Standardauswahl am Speichern gehindert; der erste gültige Kontakt wird Standard. Ungültige Kontakte werden weiterhin abgelehnt. Frühere Namen werden bei Umbenennung als Alias erhalten, damit bestehende Berichte weiterhin den richtigen Kontakt finden. Neue Namen dürfen nicht mit früheren Namen anderer Kontakte kollidieren. Eine Auswahlliste ergänzt das vorhandene Windows-Kontaktfeld.
 
 Native iOS-App:
 - Beim Kalender-/Textimport eines anderen Kunden ohne E-Mail wird dieselbe Altadress-Zuordnung wie unter Windows verhindert; eigener Regressionstest.
 - Touchfähige horizontale Berichtstabs mit Plus-Menü, Einzel-Schließen und Wiederherstellung der offenen IDs/aktiven Auswahl. Auf dem iPhone horizontal scrollbar, auf dem iPad im Detailbereich.
 - Unmittelbares automatisches Speichern statt 800-ms-Verzögerung. Nicht gespeicherte Fassungen bei Schreibfehlern bleiben im Arbeitsspeicher, werden mit Stern markiert und verhindern das Schließen ihres Tabs. Beim Zurückwechseln wird diese Fassung wieder verwendet.
-- Umbenennen des Standard-Sachbearbeiters erhält die Standardzuordnung über seine bestehende ID. Neue Kontakte bleiben nach Speichern und Neustart verfügbar; Regressionstest hinzugefügt.
+- Umbenennen des Standard-Sachbearbeiters erhält die Standardzuordnung über seine bestehende ID. Frühere Namen bleiben als Alias erhalten, damit vorhandene Berichtszuordnungen funktionieren. Neue Kontakte bleiben nach Speichern und Neustart verfügbar; Regressionstest hinzugefügt.
 
 ## Tests und Build
 

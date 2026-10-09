@@ -108,12 +108,16 @@ final class ReportStore: ObservableObject {
             var contact = contact
             contact.name = contact.name.trimmingCharacters(in: .whitespacesAndNewlines)
             contact.email = contact.email.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let previous = settings.contacts.first(where: { $0.id == contact.id }), previous.name != contact.name {
+                contact.aliases = Array(Set((contact.aliases ?? []) + (previous.aliases ?? []) + [previous.name]))
+            }
             return contact
         }
         if cleaned.resolve(cleaned.defaultName) == nil {
             if let previous = settings.resolve(settings.defaultName), let renamed = cleaned.contacts.first(where: { $0.id == previous.id }) { cleaned.defaultName = renamed.name }
             else if let first = cleaned.contacts.first { cleaned.defaultName = first.name }
         }
+        if let selected = cleaned.resolve(cleaned.defaultName) { cleaned.defaultName = selected.name }
         if let error = cleaned.validation { throw ReportError.message(error) }
         try encode(cleaned).write(to: root.appendingPathComponent("settings.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
         settings = cleaned
