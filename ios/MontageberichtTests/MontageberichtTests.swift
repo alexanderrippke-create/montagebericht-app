@@ -16,6 +16,35 @@ final class MontageberichtTests: XCTestCase {
     func root() -> URL { FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true) }
     func fixed(_ value: String) -> Date { CalendarImport.date(value)! }
     func clock(_ hour: Int, _ minute: Int = 0) -> Date { Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: fixed("2026-10-05"))! }
+    func testRenamedDefaultContactPersists() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = ReportStore(root: url)
+        var settings = store.settings
+        settings.contacts[0].name = "Umbenannt"
+        settings.contacts.append(OfficeContact(name: "Neu", email: "neu@example.de"))
+        try store.saveSettings(settings)
+        let restored = ReportStore(root: url)
+        XCTAssertEqual(restored.settings.defaultName, "Umbenannt")
+        XCTAssertEqual(restored.settings.contacts.count, 2)
+        XCTAssertEqual(restored.settings.resolve("Neu")?.email, "neu@example.de")
+    }
+    func testPortableRoundTripAndWindowsPNG() throws {
+        let source = sample()
+        let data = try PortableReport.export(source, office: "office@example.de", archive: nil)
+        let (restored, _) = try PortableReport.decode(data)
+        XCTAssertEqual(restored.customer, source.customer)
+        XCTAssertEqual(restored.officeContact, source.officeContact)
+        XCTAssertEqual(restored.customerSignature, source.customerSignature)
+        var envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var snapshot = try XCTUnwrap(envelope["report"] as? [String: Any])
+        snapshot.removeValue(forKey: "iosReport")
+        envelope["report"] = snapshot
+        let (windows, _) = try PortableReport.decode(JSONSerialization.data(withJSONObject: envelope))
+        XCTAssertTrue(Report.hasSignature(windows.customerSignature))
+        XCTAssertEqual(windows.times[0].hours, source.times[0].hours)
+        XCTAssertTrue(try ReportPDF.render(windows).starts(with: Data("%PDF".utf8)))
+    }
     func testJSONRoundTrip() throws {
         let report = sample(); let data = try JSONEncoder().encode(report)
         XCTAssertEqual(report, try JSONDecoder().decode(Report.self, from: data))

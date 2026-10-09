@@ -10,10 +10,12 @@ enum ReportError: LocalizedError {
 @MainActor
 final class ReportStore: ObservableObject {
     @Published private(set) var reports: [Report] = []
+    @Published var pendingReports: [UUID: Report] = [:]
     @Published var settings = OfficeSettings()
     @Published var issue: String?
     let root: URL
     private let manager: FileManager
+    private var documentBookmarks: [String: Data] = [:]
     init(root: URL? = nil, manager: FileManager = .default) {
         self.manager = manager
         self.root = root ?? manager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Montagebericht", isDirectory: true)
@@ -31,6 +33,7 @@ final class ReportStore: ObservableObject {
     func reload() {
         do {
             try manager.createDirectory(at: root, withIntermediateDirectories: true)
+            if let data = try? Data(contentsOf: root.appendingPathComponent("document-paths.json")), let bookmarks = try? decode([String: Data].self, from: data) { documentBookmarks = bookmarks }
             let settingsURL = root.appendingPathComponent("settings.json")
             if manager.fileExists(atPath: settingsURL.path) {
                 do {
@@ -60,6 +63,7 @@ final class ReportStore: ObservableObject {
         try manager.createDirectory(at: target, withIntermediateDirectories: true)
         try encode(report).write(to: target.appendingPathComponent("report.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
         reports.removeAll { $0.id == report.id }; reports.insert(report, at: 0)
+        try saveDocument(report)
     }
     func finalize(_ source: Report, renderer: (Report) throws -> Data) throws -> Report {
         guard !source.isFinalized else { throw ReportError.message("Bericht ist bereits abgeschlossen.") }
@@ -87,7 +91,7 @@ final class ReportStore: ObservableObject {
         if manager.fileExists(atPath: folder(source.id).path) { try? manager.removeItem(at: folder(source.id)) }
         return completed
     }
-    static func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
+    nonisolated static func digest(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
     func archivedPDF(_ report: Report) throws -> Data {
         let data = try Data(contentsOf: folder(report.id).appendingPathComponent("bericht.pdf"))
         guard report.isFinalized, report.archiveSHA256 == Self.digest(data) else { throw ReportError.message("Die archivierte PDF stimmt nicht mit dem gespeicherten Nachweis überein.") }
@@ -106,6 +110,10 @@ final class ReportStore: ObservableObject {
             contact.email = contact.email.trimmingCharacters(in: .whitespacesAndNewlines)
             return contact
         }
+        if cleaned.resolve(cleaned.defaultName) == nil {
+            if let previous = settings.resolve(settings.defaultName), let renamed = cleaned.contacts.first(where: { $0.id == previous.id }) { cleaned.defaultName = renamed.name }
+            else if let first = cleaned.contacts.first { cleaned.defaultName = first.name }
+        }
         if let error = cleaned.validation { throw ReportError.message(error) }
         try encode(cleaned).write(to: root.appendingPathComponent("settings.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
         settings = cleaned
@@ -115,9 +123,48 @@ final class ReportStore: ObservableObject {
         try encode(report).write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
         return url
     }
+    func associateDocument(_ url: URL, report: Report) throws {
+        let bookmark = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+        var next = documentBookmarks; next[report.id.uuidString] = bookmark
+        try encode(next).write(to: root.appendingPathComponent("document-paths.json"), options: [.atomic, .completeFileProtectionUnlessOpen])
+        documentBookmarks = next
+    }
+    private func saveDocument(_ report: Report) throws {
+        guard let bookmark = documentBookmarks[report.id.uuidString] else { return }
+        var stale = false
+        let url = try URL(resolvingBookmarkData: bookmark, options: .withoutUI, relativeTo: nil, bookmarkDataIsStale: &stale)
+        let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
+        try PortableReport.export(report, office: settings.resolve(report.officeContact)?.email ?? "", archive: nil).write(to: url, options: [.atomic])
+        if stale { try associateDocument(url, report: report) }
+    }
+    func portableURL(_ report: Report) throws -> URL {
+        let url = manager.temporaryDirectory.appendingPathComponent("Bericht-\(report.id).montagebericht")
+        try PortableReport.export(report, office: settings.resolve(report.officeContact)?.email ?? "", archive: report.isFinalized ? archivedPDF(report) : nil).write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+        return url
+    }
     func importBackup(_ url: URL) throws -> Report {
         let data = try Data(contentsOf: url)
         guard data.count <= 20_000_000 else { throw ReportError.message("Die Sicherung ist zu groß (maximal 20 MB).") }
+        if let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any], envelope["format"] as? String == "montagebericht" {
+            let (source, archive) = try PortableReport.decode(data)
+            var report = source
+            if reports.contains(where: { $0.id == report.id }) {
+                if report.isFinalized { throw ReportError.message("Dieser abgeschlossene Bericht ist bereits vorhanden.") }
+                report.id = UUID()
+            }
+            if let archive {
+                let target = folder(report.id)
+                let staging = root.appendingPathComponent("pending-" + UUID().uuidString, isDirectory: true)
+                try manager.createDirectory(at: staging, withIntermediateDirectories: true)
+                defer { try? manager.removeItem(at: staging) }
+                try archive.write(to: staging.appendingPathComponent("bericht.pdf"), options: .completeFileProtectionUnlessOpen)
+                try encode(report).write(to: staging.appendingPathComponent("report.json"), options: .completeFileProtectionUnlessOpen)
+                try manager.moveItem(at: staging, to: target)
+                reports.insert(report, at: 0)
+            } else { try save(report) }
+            try associateDocument(url, report: report)
+            return report
+        }
         var report = try decode(Report.self, from: data)
         guard report.schemaVersion == 1 else { throw ReportError.message("Dieses Sicherungsformat wird nicht unterstützt.") }
         // JSON allein enthält keinen PDF-Archivnachweis. Import ist eine neue Bearbeitung.

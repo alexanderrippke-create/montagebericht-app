@@ -144,7 +144,9 @@ struct Report: Codable, Identifiable, Equatable {
         return errors
     }
     static func hasSignature(_ data: Data?) -> Bool {
-        guard let data, let drawing = try? PKDrawing(data: data) else { return false }
+        guard let data else { return false }
+        if PortableReport.image(data) != nil { return true }
+        guard let drawing = try? PKDrawing(data: data) else { return false }
         return !drawing.strokes.isEmpty
     }
     func editableCopy() -> Report {

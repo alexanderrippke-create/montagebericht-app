@@ -1,5 +1,6 @@
 import SwiftUI
 import MessageUI
+import UniformTypeIdentifiers
 
 struct ReportEditor: View {
     @EnvironmentObject private var store: ReportStore
@@ -14,6 +15,8 @@ struct ReportEditor: View {
     @State private var mailData = Data()
     @State private var error: String?
     @State private var finish = false
+    @State private var exportingReport = false
+    @State private var reportDocument: ReportDocument?
     @State private var saveTask: Task<Void, Never>?
     @State private var saveStatus = ""
     var body: some View {
@@ -70,8 +73,19 @@ struct ReportEditor: View {
                 Button("E-Mail-Entwurf mit PDF", systemImage: "envelope") { prepareMail() }
                 if let office = store.settings.resolve(report.officeContact) { Text("Vorgesehene Empfänger: \(office.name) (\(office.email))" + (report.email.isEmpty ? "" : " · " + report.email)).font(.caption) }
                 else { Text("Sachbearbeiter ist nicht hinterlegt. Bitte Einstellungen prüfen.").foregroundStyle(.orange) }
+                Button("Speichern unter / Berichtsdatei") { perform {
+                    let archive = report.isFinalized ? try store.archivedPDF(report) : nil
+                    reportDocument = ReportDocument(data: try PortableReport.export(report, office: store.settings.resolve(report.officeContact)?.email ?? "", archive: archive))
+                    exportingReport = true
+                } }
                 Button("JSON-Sicherung teilen") { perform { share = try store.backupURL(report) } }
                 if !saveStatus.isEmpty { Text(saveStatus).font(.caption).foregroundStyle(.secondary) }
+            }
+        }
+        .fileExporter(isPresented: $exportingReport, document: reportDocument, contentType: .json, defaultFilename: "Montagebericht-" + report.id.uuidString) { result in
+            switch result {
+            case .success(let url): perform { try store.associateDocument(url, report: report) }
+            case .failure(let issue): error = issue.localizedDescription
             }
         }
         .navigationTitle(report.department == .montage ? "Montagebericht" : "Kärcher-Service")
@@ -109,9 +123,7 @@ struct ReportEditor: View {
         .onChange(of: report) { _, _ in
             guard !report.isFinalized else { return }
             saveTask?.cancel()
-            saveTask = Task { @MainActor in
-                do { try await Task.sleep(for: .milliseconds(800)); persist() } catch {}
-            }
+            persist()
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { saveTask?.cancel(); persist() } }
         .onDisappear { saveTask?.cancel(); persist() }
@@ -163,7 +175,8 @@ struct ReportEditor: View {
     }
     private func persist() {
         guard !report.isFinalized, store.reports.contains(where: { $0.id == report.id }) else { return }
-        do { try store.save(report); saveStatus = "Entwurf automatisch auf diesem Gerät gespeichert." } catch { self.error = "Speichern fehlgeschlagen: \(error.localizedDescription)"; saveStatus = "Änderungen sind noch nicht gespeichert." }
+        store.pendingReports[report.id] = report
+        do { try store.save(report); store.pendingReports.removeValue(forKey: report.id); saveStatus = "Entwurf automatisch auf diesem Gerät gespeichert." } catch { self.error = "Speichern fehlgeschlagen: \(error.localizedDescription)"; saveStatus = "Änderungen sind noch nicht gespeichert." }
     }
     private func perform(_ operation: () throws -> Void) { do { try operation() } catch { self.error = error.localizedDescription } }
     private func duplicate() { perform { let copy = report.editableCopy(); try store.save(copy); onSelect(copy.id) } }
@@ -212,4 +225,12 @@ struct WorkTimeView: View {
             HStack { Text(time.date, style: .date); Spacer(); Text("\(time.hours.isEmpty ? "0" : time.hours) Std.").foregroundStyle(.secondary) }.padding(.vertical, 8)
         }
     }
+}
+
+struct ReportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    var data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws { guard let data = configuration.file.regularFileContents else { throw ReportError.message("Datei konnte nicht gelesen werden") }; self.data = data }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
 }

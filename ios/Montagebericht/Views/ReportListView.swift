@@ -4,6 +4,9 @@ import UniformTypeIdentifiers
 struct ReportListView: View {
     @EnvironmentObject private var store: ReportStore
     @State private var selection: UUID?
+    @AppStorage("openReportIDs") private var openReportIDs = ""
+    @AppStorage("selectedReportID") private var selectedReportID = ""
+    private var openIDs: [UUID] { openReportIDs.split(separator: ",").compactMap { UUID(uuidString: String($0)) } }
     @State private var query = ""
     @State private var department: Department? = nil
     @State private var deleting: Report?
@@ -54,7 +57,21 @@ struct ReportListView: View {
             }
         } detail: {
             if let selection, let report = store.reports.first(where: { $0.id == selection }) {
-                ReportEditor(report: report, onSelect: { self.selection = $0 }).id(report.id)
+                VStack(spacing: 0) {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(openIDs, id: \.self) { id in
+                                if let item = store.reports.first(where: { $0.id == id }) {
+                                    Button((item.customer.isEmpty ? "Neuer Bericht" : item.customer) + (store.pendingReports[id] == nil ? "" : " *")) { self.selection = id }
+                                        .buttonStyle(.bordered).tint(selection == id ? .accentColor : .secondary)
+                                    Button { closeTab(id) } label: { Image(systemName: "xmark.circle") }.accessibilityLabel("Bericht schließen")
+                                }
+                            }
+                            Menu { Button("Neuer Montagebericht") { create(.montage) }; Button("Neuer Kärcher-Bericht") { create(.karcher) }; Button("Bericht öffnen") { importing = true } } label: { Image(systemName: "plus") }
+                        }.padding(8)
+                    }
+                    ReportEditor(report: store.pendingReports[report.id] ?? report, onSelect: { self.selection = $0 }).id(report.id)
+                }
             } else {
                 ContentUnavailableView {
                     Label("Montagebericht", systemImage: "doc.text")
@@ -64,6 +81,17 @@ struct ReportListView: View {
                     Button("Neuer Montagebericht", systemImage: "plus") { create(.montage) }.buttonStyle(.borderedProminent)
                     Button("Neuer Kärcher-Servicebericht") { create(.karcher) }.buttonStyle(.bordered)
                 }
+            }
+        }
+         .onAppear {
+            let valid = openIDs.filter { id in store.reports.contains { $0.id == id } }
+            openReportIDs = valid.map(\.uuidString).joined(separator: ",")
+            selection = UUID(uuidString: selectedReportID).flatMap { valid.contains($0) ? $0 : nil } ?? valid.first
+        }
+        .onChange(of: selection) { _, value in
+            if let value {
+                if !openIDs.contains(value) { openReportIDs = (openIDs + [value]).map(\.uuidString).joined(separator: ",") }
+                selectedReportID = value.uuidString
             }
         }
         .sheet(isPresented: $showSettings) { OfficeSettingsView(settings: store.settings) }
@@ -79,12 +107,18 @@ struct ReportListView: View {
         .alert("Hinweis", isPresented: Binding(get: { error != nil || store.issue != nil }, set: { if !$0 { error = nil; store.issue = nil } })) {
             Button("OK") { error = nil; store.issue = nil }
         } message: { Text(error ?? store.issue ?? "") }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json, UTType(filenameExtension: "montagebericht") ?? .data]) { result in
             do {
                 let url = try result.get(); let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
                 selection = try store.importBackup(url).id
             } catch { self.error = "Sicherung konnte nicht importiert werden: \(error.localizedDescription)" }
         }
+    }
+    private func closeTab(_ id: UUID) {
+        guard store.pendingReports[id] == nil else { error = "Der Bericht konnte nicht gespeichert werden. Bitte im Bericht erneut speichern, bevor der Tab geschlossen wird."; return }
+        let remaining = openIDs.filter { $0 != id }
+        openReportIDs = remaining.map(\.uuidString).joined(separator: ",")
+        if selection == id { selection = remaining.first }
     }
     private func create(_ department: Department) {
         var report = Report(); report.department = department

@@ -1,0 +1,57 @@
+{
+  "name": "montagebericht-desktop",
+  "version": "0.1.5",
+  "description": "Montagebericht für Windows",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager . Montagebericht --platform=win32 --arch=x64 --out=release --overwrite --ignore=release --ignore=tmp",
+    "installer": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "@electron/packager": "^19.0.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "author": "Alexander Rippke",
+  "build": {
+    "appId": "de.gustavschmidt.montagebericht",
+    "productName": "Montagebericht",
+    "directories": {
+      "output": "installer",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "outlook-calendar.ps1",
+      "outlook-draft.ps1",
+      "ui/**/*",
+      "package.json",
+      "updates.cjs"
+    ],
+    "asar": false,
+    "win": {
+      "artifactName": "Montagebericht-Setup-${version}.${ext}",
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "allowElevation": false,
+      "installerLanguages": [
+        "de_DE"
+      ],
+      "shortcutName": "Montagebericht",
+      "oneClick": false,
+      "perMachine": false,
+      "runAfterFinish": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    }
+  }
+}
