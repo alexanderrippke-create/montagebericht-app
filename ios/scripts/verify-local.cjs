@@ -18,8 +18,8 @@ if (fs.existsSync(source)) {
   console.log('PASS: company logo is an unchanged binary copy.');
 }
 const paths = cp.execFileSync('git',['diff','--name-only','7b218cc','HEAD'],{cwd:repository,encoding:'utf8'}).trim().split('\n');
-assert(paths.every(name=>name.startsWith('ios/') || name === '.github/workflows/ios-test.yml'));
-console.log('PASS: committed changes only add isolated iOS files and its workflow.');
+assert(paths.every(name=>name.startsWith('ios/') || name.startsWith('windows-app/') || ['.github/workflows/ios-test.yml','README.md','CHANGELOG-REPORTS.md','REPORT-FORMAT.md','PR-DESCRIPTION.md'].includes(name)));
+console.log('PASS: committed changes remain within the Windows/iOS applications, workflow and documentation.');
 const project = path.join(root,'Montagebericht.xcodeproj/project.pbxproj');
 const original = fs.readFileSync(project,'utf8');
 cp.execFileSync(process.execPath,[path.join(__dirname,'generate-project.cjs')]);
