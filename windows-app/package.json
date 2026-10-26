@@ -1,6 +1,6 @@
 {
   "name": "montagebericht-desktop",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Montagebericht für Windows",
   "main": "main.cjs",
   "scripts": {

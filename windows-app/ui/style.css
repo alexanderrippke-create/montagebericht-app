@@ -13,3 +13,22 @@
 .update-controls{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;padding:12px 24px}.update-controls span{font-size:14px}
 
 .report-tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 0;position:sticky;top:0;background:white;z-index:5}.report-tabs button{white-space:nowrap}.report-tabs [aria-pressed="true"]{border:2px solid #173550}
+
+/* Arbeitszeiten: beschriftete Eingabegruppen ohne horizontales Scrollen. */
+.time-field-label{display:none}
+@media screen{
+ .tablewrap:has(#times){overflow:visible}
+ table:has(> #times){display:block}
+ table:has(> #times)>thead{display:none}
+ #times{display:grid;gap:16px;counter-reset:time-row}
+ #times>tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px 12px;position:relative;padding:44px 16px 18px;border:1px solid #dce4eb;border-radius:8px;background:#f8fafc;counter-increment:time-row}
+ #times>tr::before{content:'Arbeitszeit ' counter(time-row);position:absolute;top:14px;left:16px;font-size:14px;font-weight:600;color:#354c5e}
+ #times td{display:block;min-width:0;border:0;padding:0}
+ #times .time-field-label{display:block;font-size:13px;font-weight:600;color:#354c5e;margin-bottom:6px}
+ #times input{width:100%;min-width:0;padding:9px 6px;background:white}
+ #times td:last-child{position:absolute;right:8px;top:3px}
+ #times .remove{padding:5px 10px}
+ section:has(#times) .hint{max-width:95ch}
+}
+@media screen and (max-width:1050px){#times>tr{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media screen and (max-width:540px){#times>tr{grid-template-columns:repeat(2,minmax(0,1fr));padding-left:12px;padding-right:12px}#times td:first-child{grid-column:1/-1}.totals{flex-wrap:wrap}}
