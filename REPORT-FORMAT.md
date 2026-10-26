@@ -23,3 +23,5 @@ Windows: `.montagebericht` oder `.json`. iOS exportiert über den Dateien-Dialog
 Abgeschlossene Berichte tragen `fields.finalizedId`, `fields.signedAt` und `archive: {pdf: <Base64>, sha256: <Hex>}`. Die PDF wird nach Prüfsummenprüfung ausgegeben. Eine abgeschlossene Fassung wird weiter gesperrt; eine neue Bearbeitung löscht Unterschriften wie bisher. Eine Prüfsumme ist kein unabhängiger Signaturnachweis.
 
 Unbekannte Formatversionen werden abgelehnt, bestehende Originaldateien nicht migriert oder gelöscht. Windows kann außerdem bisherige direkte Snapshot-JSON-Dateien lesen. iOS unterstützt weiterhin seine bisherigen nativen JSON-Sicherungen mit deren bisherigen Regeln (Import als neue Bearbeitung ohne Unterschriften).
+
+Windows 0.1.7: Zeitzeilen enthalten optional `technicians` als positive ganze Zahl (Zeichenkette). Fehlt das Feld, gilt 1. `hours`, `normal`, `p25`, `p50`, `p70` bleiben Stunden je Monteur; Gesamtstunden sind die Summe aus `hours × technicians`. `km` gilt je Zeile und wird nicht multipliziert. iOS wurde hierfür noch nicht angepasst.
