@@ -2,7 +2,7 @@
 window.addEventListener('load',()=>{
  const key='montagebericht.workspace.v1';let state;let switching=false;
  const draftKey=department=>department==='karcher'?'montagebericht.karcher.entwurf.v1':'montagebericht.entwurf.v1';
- const blank=()=>{const d=structuredClone(snapshot());for(const k of Object.keys(d.fields))d.fields[k]=typeof d.fields[k]==='boolean'?false:Array.isArray(d.fields[k])?[]:'';d.fields.kind='Montage';d.fields.serviceKinds=['Reparatur'];d.fields.date=today;d.fields.confirmedDate=today;d.times=[{date:today}];d.parts=[{}];d.signature=null;return d};
+ const blank=()=>{const d=structuredClone(snapshot());for(const k of Object.keys(d.fields))d.fields[k]=typeof d.fields[k]==='boolean'?false:Array.isArray(d.fields[k])?[]:'';d.fields.kind='Montage';d.fields.serviceKinds=['Reparatur'];d.fields.date=today;d.fields.confirmedDate=today;d.times=[{date:today}];d.parts=[{}];d.compressors=[{}];d.signature=null;return d};
  try{state=JSON.parse(localStorage.getItem(key)||'null');if(state&&(!Array.isArray(state.tabs)||!state.tabs.length))throw Error('Ungültige Sitzung')}catch{message('Sitzung konnte nicht geladen werden. Bestehende Entwürfe bleiben erhalten.');return}
  if(!state){const data=snapshot();state={active:crypto.randomUUID(),tabs:[]};state.tabs.push({id:state.active,department:reportDepartment,data,baseline:JSON.stringify(data),path:null})}
  let current=state.tabs.find(t=>t.id===state.active);if(!current)return;
