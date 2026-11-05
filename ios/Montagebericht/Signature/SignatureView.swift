@@ -47,7 +47,11 @@ struct SignatureSection: View {
                 Spacer()
                 if !locked { Button("Löschen", role: .destructive) { data = nil }.frame(minHeight: 44) }
             }
-            SignatureCanvas(data: $data, locked: locked)
+            Group {
+                if let data, let image = UIImage(data: data) {
+                    Image(uiImage: image).resizable().scaledToFit().background(Color.white)
+                } else { SignatureCanvas(data: $data, locked: locked) }
+            }
                 .frame(height: 180).clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.secondary))
                 .accessibilityLabel(title + ". Mit Finger oder Apple Pencil zeichnen.")

@@ -82,8 +82,11 @@ enum CalendarImport {
         return String(text[range])
     }
     static func apply(_ fields: [String: String], to report: inout Report) {
+        let incomingCustomer = (fields["customer"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let incomingEmail = (fields["email"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !incomingCustomer.isEmpty && incomingCustomer != report.customer.trimmingCharacters(in: .whitespacesAndNewlines) && incomingEmail.isEmpty { report.email = "" }
         let keys: [String: WritableKeyPath<Report, String>] = ["customer": \.customer, "order": \.order, "email": \.email, "task": \.task, "street": \.street, "city": \.city, "phone": \.phone, "machine": \.machine, "officeContact": \.officeContact]
-        for (key, path) in keys { if let value = fields[key], !value.isEmpty { report[keyPath: path] = value } }
+        for (key, path) in keys { if let value = fields[key]?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty { report[keyPath: path] = value } }
         if let value = fields["date"], let date = date(value) { report.date = date; report.confirmedDate = date }
     }
     static func apply(_ entry: CalendarEntry, to report: inout Report, fields: [String: String]? = nil) {
