@@ -4,3 +4,10 @@ assert.equal(normalizeEmail(' worker+service@example.de '),'worker+service@examp
 const ambiguous='a@example.de <mailto:b@example.de>';assert.equal(normalizeEmail(ambiguous),ambiguous);
 assert.equal(normalizeEmail('keine Adresse'),'keine Adresse');
 console.log('PASS: Outlook mailto/display-name normalization, duplicate addresses, plus addresses and ambiguous recipients.');
+
+const {recipients}=require('../ui/mail-recipients.js');
+const office='team@example.de';
+for(const customer of [undefined,null,'','ungültig','a@local','a@.example.de','a@-example.de','a..b@example.de','a@example.de; b@example.de','a@example.de <mailto:b@example.de>','TEAM@example.de'])assert.deepEqual(recipients(office,customer),[office]);
+assert.deepEqual(recipients(office,' worker+service@example.de '),[office,'worker+service@example.de']);
+assert.deepEqual(recipients('', 'worker@example.de'),[]);
+console.log('PASS: office-only fallback, recipient deduplication and valid customer email.');
