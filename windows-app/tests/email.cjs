@@ -11,3 +11,13 @@ for(const customer of [undefined,null,'','ungültig','a@local','a@.example.de','
 assert.deepEqual(recipients(office,' worker+service@example.de '),[office,'worker+service@example.de']);
 assert.deepEqual(recipients('', 'worker@example.de'),[]);
 console.log('PASS: office-only fallback, recipient deduplication and valid customer email.');
+
+for(const text of [
+ 'Kunden-E-Mail: kunde@example.de\nE-Mail:\nteam@example.de <mailto:team@example.de>',
+ 'Kunden-E-Mail: kunde@example.de\nE-Mail: team@example.de',
+ 'E-Mail: team@example.de\nKunden-E-Mail: kunde@example.de',
+ 'Kunden-E-Mail: kunde@example.de\nKunden-E-Mail:'
+])assert.equal(parseText(text).email,'kunde@example.de');
+console.log('PASS: explicit customer email survives empty and populated signature email lines.');
+
+for(const text of ['Kunden-E-Mail:\nE-Mail: team@example.de','E-Mail: team@example.de\nKunden-E-Mail:'])assert.equal(parseText(text).email,'');
